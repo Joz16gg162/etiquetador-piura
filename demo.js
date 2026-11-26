@@ -1,0 +1,14 @@
+// Fictional training fixtures. No real posts, personal data or preassigned labels.
+(() => {
+const rows=[
+ ['PRUEBA-001','EJEMPLO FICTICIO. El agua ha entrado a las viviendas del sector Los Sauces, Castilla. Los vecinos solicitan motobombas para retirar el agua acumulada.','2023-03-10T08:30:00-05:00','','assets/ejemplo-anegamiento.svg','',''],
+ ['PRUEBA-002','EJEMPLO FICTICIO. En la calle Los Cedros hay familias que necesitan salir de sus viviendas; piden ayuda para ponerse a salvo.','2023-03-10T09:00:00-05:00','','assets/ejemplo-viviendas.svg','',''],
+ ['PRUEBA-003','EJEMPLO FICTICIO. Hoy celebramos el aniversario del club deportivo del barrio. ¡Gracias a todos por asistir!','2023-03-10T10:00:00-05:00','','','',''],
+ ['PRUEBA-004','EJEMPLO FICTICIO. "Dicen que el río podría crecer". No se indica cuándo ni se describe una inundación actual.','2023-03-10T11:00:00-05:00','','','',''],
+ ['PRUEBA-005','EJEMPLO FICTICIO. Se reportan calles con agua en el sector Los Olivos, Catacaos, y en la avenida Las Flores, Castilla. Son dos lugares distintos.','2023-03-10T12:00:00-05:00','','assets/ejemplo-anegamiento.svg|assets/ejemplo-viviendas.svg','',''],
+ ['PRUEBA-006','EJEMPLO FICTICIO. Se reporta agua dentro de varias casas, pero la imagen adjunta ya no está disponible y el texto no menciona el lugar.','2023-03-10T13:00:00-05:00','','assets/imagen-inaccesible.jpg','',''],
+ ['PRUEBA-007','EJEMPLO FICTICIO. Compartimos un video sobre la situación del sector. Este caso solo incluye miniatura; no hay enlace al video completo.','2023-03-10T14:00:00-05:00','','','','assets/ejemplo-miniatura.svg'],
+ ['1639528642991538176','EJEMPLO FICTICIO para probar el ID largo, comas y saltos de línea.\nSe entregó ayuda a las familias del sector. No se indica si quedan necesidades pendientes.\n@ejemplo "Gracias por colaborar".','2023-03-10T15:00:00-05:00','','','','']
+];
+const q=v=>'"'+v.replace(/"/g,'""')+'"';window.PIURA_DEMO_CSV='\uFEFFid,texto,fecha,url,imagenes,videos,miniaturas\r\n'+rows.map(r=>r.map(q).join(',')).join('\r\n');
+})();
