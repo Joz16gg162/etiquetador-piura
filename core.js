@@ -21,6 +21,24 @@ function csv(text){
  return rows.map((r,i)=>{if(r.length!==headers.length)throw Error(`Fila ${i+2}: hay ${r.length} celdas; se esperaban ${headers.length}. Revisa comillas y separadores.`);return Object.fromEntries(headers.map((h,j)=>[h,r[j]]));});
 }
 function safeURL(value,relative=false){const s=String(value||'').trim();if(!s)return '';if(relative&&/^(?:assets|examples)\/[a-z0-9_./-]+$/i.test(s)&&!s.includes('..'))return s;try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:'';}catch{return '';}}
+function mapSearchURLs(query){const q=String(query||'').trim();if(!q)return {google:'',osm:''};if(q.length>500)throw Error('Acorta la búsqueda del mapa a 500 caracteres.');return {google:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q),osm:'https://www.openstreetmap.org/search?query='+encodeURIComponent(q)};}
+function coordinates(value){
+ const raw=String(value||'').trim();let pair=null,source='';
+ const numeric='[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)';const pairRE=new RegExp('^\\(?\\s*('+numeric+')\\s*[,;]\\s*('+numeric+')\\s*\\)?$');
+ const plain=raw.match(pairRE);if(plain)pair=[plain[1],plain[2]];
+ else{
+  const safe=safeURL(raw);if(!safe)throw Error('Pega latitud, longitud en decimales, por ejemplo: -5.1943, -80.6328.');
+  const u=new URL(safe),host=u.hostname.toLowerCase();const isOSM=host==='openstreetmap.org'||host==='www.openstreetmap.org';const isGoogle=host==='google.com'||host==='www.google.com'||host==='maps.google.com'||host==='www.google.com.pe'||host==='google.com.pe';
+  if(isOSM&&u.searchParams.has('mlat')&&u.searchParams.has('mlon'))pair=[u.searchParams.get('mlat'),u.searchParams.get('mlon')];
+  if(isGoogle){for(const name of ['query','q']){const match=(u.searchParams.get(name)||'').match(pairRE);if(match){pair=[match[1],match[2]];break;}}
+   if(!pair){let decoded='';try{decoded=decodeURIComponent(u.pathname+u.search);}catch{}const marker=decoded.match(new RegExp('!3d('+numeric+')!4d('+numeric+')'));if(marker)pair=[marker[1],marker[2]];}
+  }
+  if(!pair)throw Error('Ese enlace no contiene coordenadas de un punto identificable. Copia las coordenadas del punto en Google Maps o, en OpenStreetMap, usa Compartir con «Incluir marcador». El centro del mapa y los enlaces cortos no se importan como ubicación exacta.');
+  source=safe;
+ }
+ if(pair.some(v=>!new RegExp('^'+numeric+'$').test(String(v)))||!Number.isFinite(Number(pair[0]))||!Number.isFinite(Number(pair[1]))||Math.abs(Number(pair[0]))>90||Math.abs(Number(pair[1]))>180)throw Error('Coordenadas fuera de rango. El orden debe ser latitud, longitud; conserva el signo negativo.');
+ return {lat:String(Number(pair[0])),lng:String(Number(pair[1])),source};
+}
 function list(v){if(!v)return [];if(v.trim().startsWith('[')){try{const a=JSON.parse(v);if(!Array.isArray(a)||!a.every(x=>typeof x==='string'))throw Error();return a;}catch{throw Error('La lista de medios debe ser un arreglo JSON de enlaces o enlaces separados por |.');}}return v.split('|').map(x=>x.trim()).filter(Boolean);}
 function encodeCell(v){let s=String(v??'');if(/^'/.test(s)||/^[\s]*[=+@-]/.test(s)||/^\d{16,}$/.test(s))s="'"+s;return s;}
 function decodeCell(v){return v.startsWith("'")?v.slice(1):v;}
@@ -86,5 +104,5 @@ function csvExport(dataset,session){
  return '\uFEFF'+[headers.concat(extra).map(quote).join(','),...rows].join('\r\n');
 }
 async function fingerprint(records){const value=JSON.stringify(records.map(r=>r.raw));if(globalThis.crypto?.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}let a=2166136261,b=5381;for(let i=0;i<value.length;i++){a=Math.imul(a^value.charCodeAt(i),16777619);b=Math.imul(b,33)^value.charCodeAt(i);}return `portable-${a>>>0}-${b>>>0}-${value.length}`;}
-return {VERSION,protocols,csv,normalize,safeURL,blank,effective,errors,csvExport,fingerprint,validateAnnotationShape};
+return {VERSION,protocols,csv,normalize,safeURL,mapSearchURLs,coordinates,blank,effective,errors,csvExport,fingerprint,validateAnnotationShape};
 });

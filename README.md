@@ -12,7 +12,7 @@ Página estática para importar un CSV, revisar texto e imágenes juntos y expor
 
 ## Almacenamiento y trabajo independiente
 
-Los datasets y las anotaciones se guardan con IndexedDB en el navegador de cada persona, por dataset y anotador, conservando la versión de protocolo. GitHub solo aloja los archivos públicos de la herramienta. El programa no envía el CSV, etiquetas, nombre del anotador ni respaldo a GitHub ni a otro servicio. Las imágenes y videos remotos se solicitan a los servidores de sus enlaces cuando se muestran; los enlaces externos se abren solo al pulsarlos. No hay analítica ni bibliotecas externas.
+Los datasets y las anotaciones se guardan con IndexedDB en el navegador de cada persona, por dataset y anotador, conservando la versión de protocolo. GitHub solo aloja los archivos públicos de la herramienta. El programa no envía el CSV, etiquetas, nombre del anotador ni respaldo a GitHub ni a otro servicio. Las imágenes y videos remotos se solicitan a los servidores de sus enlaces cuando se muestran; los enlaces externos se abren solo al pulsarlos. Al pulsar una búsqueda de mapa, se envía la consulta escrita a Google Maps u OpenStreetMap. No hay analítica ni bibliotecas externas.
 
 El nombre es un identificador local, no una contraseña. No existe sincronización ni control de acceso por usuario. Otra persona con acceso al mismo perfil del navegador podría abrir sus sesiones locales. Durante calibración, cada participante debe usar su propio perfil o equipo y su propia exportación. No se muestran predicciones ni etiquetas de otros anotadores durante el trabajo.
 
@@ -49,6 +49,14 @@ La calibración entre los tres participantes, la revisión por consenso, el regi
 Si la relevancia es No, las dos categorías se guardan como No y las ubicaciones se dejan vacías. Si es Sí, deben responderse ambas categorías y registrarse lugares o declarar que no hay referencia textual. Un punto exige coordenadas y fuente de verificación; un área se conserva como área. Los casos con duda requieren observación y no cuentan como completados.
 
 Las etiquetas principales usan texto e imágenes estáticas; el video tiene un campo complementario y marca temporal. Una miniatura nunca se considera revisión del video completo. No se consultan fuentes ni se sugieren etiquetas automáticamente.
+
+## Buscar una referencia en el mapa
+
+En **Añadir lugar**, puedes escribir la referencia literal o seleccionar la frase dentro del texto de la publicación y pulsar **Usar texto seleccionado del post**. Cada lugar tiene su propia búsqueda editable y dos enlaces: **Buscar en Google Maps** y **Buscar en OpenStreetMap**. Se añade Piura, Perú como contexto de búsqueda visible y editable, sin modificar la referencia textual ni dar por resuelta la ubicación.
+
+Si puedes verificar un punto concreto, elige **Punto**. Copia del mapa el par **latitud, longitud**, pégalo en el asistente y pulsa **Usar coordenadas**. También se aceptan enlaces de Google Maps que contengan coordenadas del punto (`query`, `q` o metadatos `!3d…!4d…`) y enlaces largos de OpenStreetMap con marcador (`mlat` y `mlon`). Cuando se importa un enlace compatible, se conserva en Fuente de verificación. Si pegas solo números, debes indicar la fuente manualmente.
+
+En Google Maps puedes copiar las coordenadas al hacer clic derecho en el punto. En OpenStreetMap usa **Compartir**, marca **Incluir marcador**, sitúalo y copia el enlace largo. Los enlaces cortos y las coordenadas del centro de la vista (`@…` o `#map=…` sin marcador) se rechazan: no prueban dónde está el punto. No se hace geocodificación automática ni se garantizan coordenadas exactas a partir de una referencia ambigua. Si el texto solo identifica un barrio o distrito, conserva **Área**. La anotación sigue requiriendo lugar identificado y fuente antes de completar un punto.
 
 ## Exportación e intercambio
 
