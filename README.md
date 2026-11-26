@@ -2,23 +2,27 @@
 
 Página estática para importar un CSV, revisar texto e imágenes juntos y exportar anotaciones individuales. Funciona en GitHub Pages y abriendo `index.html` desde un ZIP extraído. No instala dependencias ni necesita tokens de X.
 
-## Empezar
+## Uso
 
-1. Escribe un nombre o código de anotador y abre tu sesión.
-2. Importa tu CSV o pulsa **Probar con ejemplos**. Los ocho casos son ficticios, sin respuestas marcadas. Las ilustraciones son esquemas, no fotos reales.
-3. Lee la publicación, revisa sus medios y completa las etiquetas. Puedes ampliar cada imagen.
-4. Usa **Guardar y siguiente** para completar. **Marcar con duda** exige una explicación y conserva el caso pendiente de consenso. **Siguiente sin completar** conserva un borrador.
-5. Exporta al terminar cada sesión. Guarda el CSV en una carpeta privada. Para continuar en otro equipo, importa ese CSV o el respaldo JSON.
+- Importa el CSV que vas a etiquetar. No se requiere nombre, cuenta ni abrir una sesión.
+- Revisa la publicación y completa sus etiquetas. Pulsa **Guardar y siguiente**, o **Marcar con duda** si necesitas revisión por consenso.
+- Exporta el CSV al terminar. Para continuar en otro ordenador, importa ese mismo CSV etiquetado.
 
-## Almacenamiento y trabajo independiente
+## Pantalla
 
-Los datasets y las anotaciones se guardan con IndexedDB en el navegador de cada persona, por dataset y anotador, conservando la versión de protocolo. GitHub solo aloja los archivos públicos de la herramienta. El programa no envía el CSV, etiquetas, nombre del anotador ni respaldo a GitHub ni a otro servicio. Las imágenes y videos remotos se solicitan a los servidores de sus enlaces cuando se muestran; los enlaces externos se abren solo al pulsarlos. Al pulsar una búsqueda de mapa, se envía la consulta escrita a Google Maps u OpenStreetMap. No hay analítica ni bibliotecas externas.
+**Archivo** muestra el nombre del CSV y los botones de importación y exportación. **Avance del archivo** permanece visible sobre toda el área de trabajo: la barra y el porcentaje representan publicaciones completadas, no la posición en la lista. Los borradores cuentan como pendientes; los casos con duda se muestran por separado y no se consideran completados.
 
-El nombre es un identificador local, no una contraseña. No existe sincronización ni control de acceso por usuario. Otra persona con acceso al mismo perfil del navegador podría abrir sus sesiones locales. Durante calibración, cada participante debe usar su propio perfil o equipo y su propia exportación. No se muestran predicciones ni etiquetas de otros anotadores durante el trabajo.
+**Publicación** separa ID, fecha y hora, título cuando esté incluido, contenido e imágenes/videos. X no exige un título: si el CSV no tiene `titulo`, `título` o `title`, no se genera uno ni se divide artificialmente el texto. **Etiquetas** agrupa los valores que debe registrar la persona, conservando las reglas del protocolo.
 
-El **CSV exportado incluye solo una sesión**, su anotador, el protocolo y todas las publicaciones de ese dataset, incluidas las pendientes. El **respaldo JSON incluye todas las sesiones locales del dataset activo**: úsalo de forma privada, no lo distribuyas como lote para evaluación independiente.
+## Archivos y guardado
 
-El almacenamiento depende del navegador y del origen. Abrir el ZIP local, otro navegador y la página en línea son almacenes distintos. El modo privado, borrar datos del navegador o quedarse sin espacio puede impedir conservarlos. La interfaz muestra si el guardado falla y permite exportar en memoria. El archivo exportado es la copia que debes conservar. No edites la misma sesión simultáneamente en varias pestañas; esta primera versión no sincroniza cambios entre pestañas.
+El CSV y las etiquetas se procesan en el navegador. GitHub solo aloja el programa y ejemplos ficticios. El archivo no se envía a GitHub ni a un servidor de almacenamiento. Los enlaces a medios se cargan desde sus servidores originales; las búsquedas de mapas envían solo la consulta al proveedor al pulsar el enlace.
+
+El guardado local permite recuperar el avance en el mismo navegador y origen. Para conservarlo o cambiar de equipo, usa el CSV exportado. El guardado local puede no estar disponible en modo privado, con el almacenamiento lleno o tras borrar datos del navegador. Si falla, la página pide exportar. No se editan simultáneamente los mismos archivos en varias pestañas.
+
+No existe inicio de sesión ni sincronización entre asesores. Cada participante trabaja con su archivo y entrega su exportación. Si el CSV incluye una única identificación en `responsable` o `anotador`, se conserva automáticamente como metadato; si no, se usa un identificador técnico individual sin afirmar quién etiquetó. El nombre del archivo exportado deriva del CSV cargado.
+
+Las exportaciones anteriores siguen siendo compatibles. Los registros locales anteriores se conservan y se recupera el etiquetado activo sin mezclar respuestas de distintas personas. Para recuperar una exportación concreta, impórtala. No se ofrece gestión de sesiones ni respaldos JSON en la pantalla simplificada.
 
 ## Formato CSV
 
@@ -28,6 +32,7 @@ Codificación **UTF-8**, con coma o punto y coma como delimitador. Encierra entr
 | --- | --- | --- |
 | `id` | Sí | ID único como texto. También acepta `tweet_id`, `post_id`, `id_publicacion`. |
 | `texto` | Sí | Texto completo. También acepta `text`, `full_text`. |
+| `titulo` | No | Título original, si existe. También acepta `título` o `title`. No se inventa un título para los posts que no lo tengan. |
 | `fecha` | No | Fecha ISO 8601 con zona horaria. Se muestra en America/Lima. También `created_at`, `date`. |
 | `url` | No | Enlace HTTP/HTTPS a la publicación. También `tweet_url`, `enlace`. |
 | `imagenes` | No | URLs HTTP/HTTPS de imágenes separadas por `|`, o arreglo JSON de URLs. También `image_urls`, `image_url`, `photo_urls`, `media_urls`. |
@@ -62,9 +67,9 @@ En Google Maps puedes copiar las coordenadas al hacer clic derecho en el punto. 
 
 Se conservan las columnas originales y se agregan columnas `_etq_` con anotador, versión de protocolo, estado, etiquetas, ubicaciones JSON, confianza, observaciones, fecha de modificación y anotación completa. Los estados son `pendiente`, `borrador`, `duda` y `completa`. La importación del CSV exportado reconstruye la sesión. Si hay respuestas locales distintas, se pide una decisión antes de reemplazarlas.
 
-Para reducir la ejecución accidental de fórmulas al abrir CSV en hojas de cálculo, se prefijan con apóstrofo los valores que podrían ser fórmulas, los IDs numéricos de más de 15 dígitos y los textos que ya empiezan con apóstrofo. `_etq_export_version=1` permite revertir esa protección al reimportar, conservando exactamente texto e ID. El respaldo JSON conserva el contenido exacto sin esta adaptación. Para análisis externo, elimina solo ese prefijo de protección siguiendo la versión; no conviertas los IDs a número.
+Para reducir la ejecución accidental de fórmulas al abrir CSV en hojas de cálculo, se prefijan con apóstrofo los valores que podrían ser fórmulas, los IDs numéricos de más de 15 dígitos y los textos que ya empiezan con apóstrofo. `_etq_export_version=1` permite revertir esa protección al reimportar, conservando exactamente texto e ID. Los textos originales se reconstruyen al reimportar el CSV exportado. Para análisis externo, elimina solo ese prefijo de protección siguiendo la versión; no conviertas los IDs a número.
 
-La primera versión no reúne automáticamente archivos de varios anotadores ni calcula kappa. Deben consolidarse por `(id, anotador, protocolo)`, manteniendo la independencia y distinguiendo los casos pendientes. No subas datos de investigación, exportaciones ni respaldos al repositorio público.
+La primera versión no reúne automáticamente archivos de varios anotadores ni calcula kappa. Deben consolidarse por `(id, anotador, protocolo)`, manteniendo la independencia y distinguiendo los casos pendientes. No subas datos de investigación ni exportaciones al repositorio público.
 
 ## Pruebas
 
@@ -74,4 +79,4 @@ Para inspección visual local, se puede servir esta carpeta con cualquier servid
 
 ## Publicación
 
-El repositorio público debe contener únicamente código, documentación y ejemplos ficticios. En GitHub Pages, publicar desde la raíz de la rama configurada. No hay compilación: `index.html`, `styles.css`, `core.js`, `app.js`, `demo.js` y `assets/` constituyen la aplicación. `.nojekyll` evita procesamiento Jekyll. No se requiere una clave API ni un dominio propio.
+El repositorio público debe contener únicamente código, documentación y ejemplos ficticios. En GitHub Pages, publicar desde la raíz de la rama configurada. No hay compilación: `index.html`, `styles.css`, `layout.css`, `core.js`, `app.js`, `demo.js` y `assets/` constituyen la aplicación. `.nojekyll` evita procesamiento Jekyll. No se requiere una clave API ni un dominio propio.

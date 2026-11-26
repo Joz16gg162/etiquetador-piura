@@ -57,7 +57,7 @@ function normalize(rows){
   if([...photos,...videos,...thumbs].some(x=>!x))throw Error(`Fila ${i+2}: un enlace de medio no es HTTP/HTTPS válido.`);
   const hasVideo=videos.length>0||thumbs.length>0||/^(si|sí|true|1)$/i.test(get('contiene_video','has_video'));
   const hasImage=photos.length>0||/^(si|sí|true|1)$/i.test(get('contiene_imagen','has_image'));
-  const r={id,text,date:get('fecha','created_at','date'),url:safeURL(get('url','tweet_url','enlace')),photos,videos,thumbs,hasImage,hasVideo,raw:Object.fromEntries(Object.entries(raw).filter(([k])=>!k.startsWith('_etq_')))};
+  const r={id,text,title:get('titulo','título','title'),date:get('fecha','created_at','date'),url:safeURL(get('url','tweet_url','enlace')),photos,videos,thumbs,hasImage,hasVideo,raw:Object.fromEntries(Object.entries(raw).filter(([k])=>!k.startsWith('_etq_')))};
   if(seen.has(id)){const old=records.find(p=>p.id===id);if(JSON.stringify(old)!==JSON.stringify(r))throw Error(`El ID ${id} aparece con contenidos distintos. Resuelve ese conflicto antes de importar.`);duplicates++;continue;}
   seen.add(id);records.push(r);
   if(raw._etq_anotador&&raw._etq_protocolo){
@@ -94,6 +94,12 @@ function errors(a,record,forDoubt=false){
  if(record.hasVideo&&['atencion','inundacion','ambos'].includes(a.videoEvidence)&&!a.videoTime.trim())e.push('Indica el momento del video donde aparece la evidencia.');
  return e;
 }
+function fileLabels(dataset,preferred=''){
+ const protocol='auxilio_v1';dataset.sessions=dataset.sessions||[];const supported=dataset.sessions.filter(s=>s.protocol===protocol);
+ let active=supported.find(s=>s.annotator===preferred)||supported.find(s=>s.annotator===dataset.activeAnnotator)||(supported.length===1?supported[0]:null)||supported.find(s=>s.annotator==='individual');
+ if(!active){const names=new Set(dataset.records.flatMap(r=>Object.entries(r.raw).filter(([k,v])=>['responsable','anotador','annotator'].includes(k.toLowerCase())&&String(v).trim()).map(([,v])=>String(v).trim())));active={annotator:names.size===1?[...names][0]:'individual',protocol,annotations:[]};dataset.sessions.push(active);}
+ dataset.activeAnnotator=active.annotator;return active;
+}
 function blank(id){return {id,status:'borrador',relevant:'',attention:'',flood:'',noReference:false,locations:[],confidence:'segura',notes:'',videoEvidence:'no_revisado',videoTime:'',updatedAt:''};}
 function effective(a){const b=JSON.parse(JSON.stringify(a));if(b.relevant==='no'){b.attention='no';b.flood='no';b.noReference=true;b.locations=[];}else if(b.noReference)b.locations=[];else b.locations=b.locations.map(l=>{if(l.type==='no_resuelta')return {...l,resolved:'',district:'',lat:'',lng:'',source:''};if(l.type==='area')return {...l,lat:'',lng:'',source:''};return l;});return b;}
 function csvExport(dataset,session){
@@ -104,5 +110,5 @@ function csvExport(dataset,session){
  return '\uFEFF'+[headers.concat(extra).map(quote).join(','),...rows].join('\r\n');
 }
 async function fingerprint(records){const value=JSON.stringify(records.map(r=>r.raw));if(globalThis.crypto?.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}let a=2166136261,b=5381;for(let i=0;i<value.length;i++){a=Math.imul(a^value.charCodeAt(i),16777619);b=Math.imul(b,33)^value.charCodeAt(i);}return `portable-${a>>>0}-${b>>>0}-${value.length}`;}
-return {VERSION,protocols,csv,normalize,safeURL,mapSearchURLs,coordinates,blank,effective,errors,csvExport,fingerprint,validateAnnotationShape};
+return {VERSION,protocols,csv,normalize,safeURL,mapSearchURLs,coordinates,fileLabels,blank,effective,errors,csvExport,fingerprint,validateAnnotationShape};
 });
