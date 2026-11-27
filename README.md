@@ -4,9 +4,9 @@ Página estática para importar un CSV, revisar texto e imágenes juntos y expor
 
 ## Uso
 
-- Importa el CSV que vas a etiquetar. No se requiere nombre, cuenta ni abrir una sesión.
-- Revisa la publicación y completa sus etiquetas. Pulsa **Guardar y siguiente**, o **Marcar con duda** si necesitas revisión por consenso.
-- Exporta el CSV al terminar. Para continuar en otro ordenador, importa ese mismo CSV etiquetado.
+- Importa el CSV que vas a etiquetar. No se requiere cuenta ni abrir una sesión.
+- Revisa la publicación y completa sus etiquetas. Si necesitas revisión, elige **Con duda** en el campo **Confianza** y explica el motivo en Observaciones. En ambos casos pulsa **Guardar y siguiente**.
+- Escribe el **Nombre del etiquetador** y exporta el CSV al terminar. Para continuar en otro ordenador, importa ese mismo CSV etiquetado.
 
 ## Pantalla
 
@@ -20,7 +20,7 @@ El CSV y las etiquetas se procesan en el navegador. GitHub solo aloja el program
 
 El guardado local permite recuperar el avance en el mismo navegador y origen. Para conservarlo o cambiar de equipo, usa el CSV exportado. El guardado local puede no estar disponible en modo privado, con el almacenamiento lleno o tras borrar datos del navegador. Si falla, la página pide exportar. No se editan simultáneamente los mismos archivos en varias pestañas.
 
-No existe inicio de sesión ni sincronización entre asesores. Cada participante trabaja con su archivo y entrega su exportación. Si el CSV incluye una única identificación en `responsable` o `anotador`, se conserva automáticamente como metadato; si no, se usa un identificador técnico individual sin afirmar quién etiquetó. El nombre del archivo exportado deriva del CSV cargado.
+No existe inicio de sesión ni sincronización entre asesores. Cada participante trabaja con su archivo y entrega su exportación. El campo **Nombre del etiquetador** es texto escrito por la persona, no un inicio de sesión. Se conserva con el archivo y es necesario para exportar. La columna visible `etiquetador` contiene ese nombre en las filas con anotaciones; las filas todavía pendientes quedan sin autor. Se conservan además los metadatos necesarios para recuperar el nombre y continuar, incluso si se exporta antes de etiquetar la primera publicación. El nombre del archivo exportado deriva del CSV cargado.
 
 Las exportaciones anteriores siguen siendo compatibles. Los registros locales anteriores se conservan y se recupera el etiquetado activo sin mezclar respuestas de distintas personas. Para recuperar una exportación concreta, impórtala. No se ofrece gestión de sesiones ni respaldos JSON en la pantalla simplificada.
 
@@ -65,7 +65,7 @@ En Google Maps puedes copiar las coordenadas al hacer clic derecho en el punto. 
 
 ## Exportación e intercambio
 
-Se conservan las columnas originales y se agregan columnas `_etq_` con anotador, versión de protocolo, estado, etiquetas, ubicaciones JSON, confianza, observaciones, fecha de modificación y anotación completa. Los estados son `pendiente`, `borrador`, `duda` y `completa`. La importación del CSV exportado reconstruye la sesión. Si hay respuestas locales distintas, se pide una decisión antes de reemplazarlas.
+Se conservan las columnas originales, se agrega la columna `etiquetador` y se agregan columnas `_etq_` con anotador, versión de protocolo, estado, etiquetas, ubicaciones JSON, confianza, observaciones, fecha de modificación y anotación completa. Los estados son `pendiente`, `borrador`, `duda` y `completa`. La importación del CSV exportado reconstruye la sesión. Si hay respuestas locales distintas, se pide una decisión antes de reemplazarlas.
 
 Para reducir la ejecución accidental de fórmulas al abrir CSV en hojas de cálculo, se prefijan con apóstrofo los valores que podrían ser fórmulas, los IDs numéricos de más de 15 dígitos y los textos que ya empiezan con apóstrofo. `_etq_export_version=1` permite revertir esa protección al reimportar, conservando exactamente texto e ID. Los textos originales se reconstruyen al reimportar el CSV exportado. Para análisis externo, elimina solo ese prefijo de protección siguiendo la versión; no conviertas los IDs a número.
 

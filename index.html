@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Importa un CSV, etiqueta publicaciones y exporta tu trabajo."><meta name="referrer" content="no-referrer">
-<title>Piura · Etiquetado manual</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=1.2"><link rel="stylesheet" href="layout.css?v=1.2"><script src="core.js?v=1.2" defer></script><script src="demo.js" defer></script><script src="app.js?v=1.2" defer></script>
+<title>Piura · Etiquetado manual</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=1.3"><link rel="stylesheet" href="layout.css?v=1.3"><script src="core.js?v=1.3" defer></script><script src="demo.js" defer></script><script src="app.js?v=1.3" defer></script>
 </head><body><main>
 <header class="page-header"><p class="eyebrow">GRAN PIURA</p><h1>Etiquetado manual</h1></header>
 <section class="file-panel" aria-labelledby="fileHeading">
  <div class="panel-heading"><h2 id="fileHeading">Archivo</h2><div class="file-actions"><label class="button primary" for="csvFile">Importar CSV</label><input class="sr-only" id="csvFile" type="file" accept=".csv,text/csv"><button id="exportCSV" disabled>Exportar CSV</button></div></div>
- <div class="file-summary"><span class="field-label">Archivo cargado</span><p id="datasetTitle">Ningún archivo seleccionado</p></div>
+ <div class="file-summary"><span class="field-label">Archivo cargado</span><p id="datasetTitle">Ningún archivo seleccionado</p><label class="labeler-field">Nombre del etiquetador<input id="labelerName" type="text" maxlength="120" autocomplete="name" placeholder="Escribe tu nombre"></label></div>
  <div class="usage"><h3>Uso</h3><ul><li>Importa el CSV que vas a etiquetar.</li><li>Revisa cada publicación, completa sus etiquetas y pulsa «Guardar y siguiente».</li><li>Exporta el CSV al terminar. Puedes importarlo después para continuar.</li></ul></div>
  <div id="welcome" class="start-options"><button id="demoButton">Probar con ejemplos</button><button id="templateButton">Descargar plantilla CSV</button></div>
 </section>
@@ -30,9 +30,9 @@
       <fieldset class="question dependent"><legend>Inundación o desborde presente o inminente</legend><div class="choices"><label><input type="radio" name="flood" value="si"> Sí</label><label><input type="radio" name="flood" value="no"> No</label></div><p class="help">Incluye anegamiento presente. La inminencia exige indicios concretos de ocurrencia dentro de las próximas 24 horas, según la publicación.</p></fieldset>
      </div>
      <section class="locations dependent"><div class="section-head"><h3>Ubicación del hecho</h3><button id="addLocation" type="button">Añadir lugar</button></div><p class="help">Toma la referencia del texto y búscala en Google Maps u OpenStreetMap. Conserva barrios y distritos como áreas.</p><label class="check"><input id="noReference" type="checkbox"> No hay referencia geográfica en el texto</label><div id="locationRows"></div></section>
-     <div class="closing-fields"><label>Confianza<select id="confidence"><option value="segura">Segura</option><option value="con_duda">Con duda</option></select></label><label class="notes">Observaciones<textarea id="notes" rows="2" placeholder="Explica una duda o registra la evidencia de tu decisión."></textarea></label></div>
+     <div class="closing-fields"><label>Confianza<select id="confidence"><option value="segura">Segura</option><option value="con_duda">Con duda</option></select><span class="help">Si eliges «Con duda», explica el motivo en Observaciones.</span></label><label class="notes">Observaciones<textarea id="notes" rows="2" placeholder="Explica una duda o registra la evidencia de tu decisión."></textarea></label></div>
      <details id="videoSection" hidden><summary>Evidencia en el video · campo complementario</summary><p class="help">Las etiquetas principales usan texto e imágenes estáticas. La miniatura no demuestra el contenido del video completo.</p><div class="closing-fields"><label>Evidencia observada<select id="videoEvidence"><option value="no_revisado">No revisado</option><option value="sin_aporte">Sin aporte</option><option value="atencion">Auxilio</option><option value="inundacion">Inundación o desborde</option><option value="ambos">Ambos</option></select></label><label>Momento del video<input id="videoTime" placeholder="Ej.: 00:15"></label></div></details>
-    </fieldset><div id="formErrors" class="form-errors" role="alert" hidden></div><div class="editor-actions"><button type="button" id="previous">Anterior</button><button type="button" id="markDoubt">Marcar con duda</button><button type="button" id="next">Siguiente sin completar</button><button type="submit" class="primary" id="saveNext">Guardar y siguiente</button></div></form>
+    </fieldset><div id="formErrors" class="form-errors" role="alert" hidden></div><div class="editor-actions"><button type="button" id="previous">Anterior</button><button type="button" id="next">Siguiente sin completar</button><button type="submit" class="primary" id="saveNext">Guardar y siguiente</button></div></form>
    </section>
   </div>
  </div>

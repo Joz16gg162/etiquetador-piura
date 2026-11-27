@@ -43,11 +43,12 @@ function list(v){if(!v)return [];if(v.trim().startsWith('[')){try{const a=JSON.p
 function encodeCell(v){let s=String(v??'');if(/^'/.test(s)||/^[\s]*[=+@-]/.test(s)||/^\d{16,}$/.test(s))s="'"+s;return s;}
 function decodeCell(v){return v.startsWith("'")?v.slice(1):v;}
 function normalize(rows){
- const seen=new Set(),records=[],imported=[];let duplicates=0;
+ const seen=new Set(),records=[],imported=[],labelerNames=new Set();let duplicates=0;
  for(const [i,rawInput] of rows.entries()){
   const encoded=rawInput._etq_export_version==='1';const raw=Object.fromEntries(Object.entries(rawInput).map(([k,v])=>[k,encoded?decodeCell(String(v)):String(v)]));
   const keyMap=new Map(Object.keys(raw).map(k=>[k.toLowerCase().trim(),k]));
   const get=(...names)=>{for(const n of names){if(keyMap.has(n))return raw[keyMap.get(n)];}return '';};
+  const labeler=get('_etq_nombre_etiquetador','etiquetador').trim();if(labeler)labelerNames.add(labeler);
   const id=get('id','tweet_id','post_id','id_publicacion').trim(),text=get('texto','text','full_text');
   if(!id||!text.trim())throw Error(`Fila ${i+2}: son obligatorios un ID y texto. Encabezados admitidos: id/texto o tweet_id/text.`);
   if(/^\d+[.,]\d+e[+-]?\d+$/i.test(id)||/^\d+e[+-]?\d+$/i.test(id))throw Error(`Fila ${i+2}: el ID está en notación científica. Usa el ID original como texto.`);
@@ -57,7 +58,7 @@ function normalize(rows){
   if([...photos,...videos,...thumbs].some(x=>!x))throw Error(`Fila ${i+2}: un enlace de medio no es HTTP/HTTPS válido.`);
   const hasVideo=videos.length>0||thumbs.length>0||/^(si|sí|true|1)$/i.test(get('contiene_video','has_video'));
   const hasImage=photos.length>0||/^(si|sí|true|1)$/i.test(get('contiene_imagen','has_image'));
-  const r={id,text,title:get('titulo','título','title'),date:get('fecha','created_at','date'),url:safeURL(get('url','tweet_url','enlace')),photos,videos,thumbs,hasImage,hasVideo,raw:Object.fromEntries(Object.entries(raw).filter(([k])=>!k.startsWith('_etq_')))};
+  const r={id,text,title:get('titulo','título','title'),date:get('fecha','created_at','date'),url:safeURL(get('url','tweet_url','enlace')),photos,videos,thumbs,hasImage,hasVideo,raw:Object.fromEntries(Object.entries(raw).filter(([k])=>!k.startsWith('_etq_')&&k.toLowerCase()!=='etiquetador'))};
   if(seen.has(id)){const old=records.find(p=>p.id===id);if(JSON.stringify(old)!==JSON.stringify(r))throw Error(`El ID ${id} aparece con contenidos distintos. Resuelve ese conflicto antes de importar.`);duplicates++;continue;}
   seen.add(id);records.push(r);
   if(raw._etq_anotador&&raw._etq_protocolo){
@@ -66,7 +67,7 @@ function normalize(rows){
    if(a){validateAnnotationShape(a,id);if(a.status==='completa'&&errors(a,r).length)throw Error('Una anotación completada del CSV no cumple los campos requeridos.');imported.push({annotator:raw._etq_anotador,protocol:raw._etq_protocolo,annotation:a});}
   }
  }
- return {records,imported,duplicates};
+ return {records,imported,duplicates,labelerName:labelerNames.size===1?[...labelerNames][0]:''};
 }
 function validateAnnotationShape(a,id){
  if(!a||a.id!==id||!['borrador','completa','duda'].includes(a.status)||!Array.isArray(a.locations)||!['','si','no'].includes(a.relevant)||!['','si','no'].includes(a.attention)||!['','si','no'].includes(a.flood))throw Error('El respaldo contiene una anotación incompatible.');
@@ -102,11 +103,11 @@ function fileLabels(dataset,preferred=''){
 }
 function blank(id){return {id,status:'borrador',relevant:'',attention:'',flood:'',noReference:false,locations:[],confidence:'segura',notes:'',videoEvidence:'no_revisado',videoTime:'',updatedAt:''};}
 function effective(a){const b=JSON.parse(JSON.stringify(a));if(b.relevant==='no'){b.attention='no';b.flood='no';b.noReference=true;b.locations=[];}else if(b.noReference)b.locations=[];else b.locations=b.locations.map(l=>{if(l.type==='no_resuelta')return {...l,resolved:'',district:'',lat:'',lng:'',source:''};if(l.type==='area')return {...l,lat:'',lng:'',source:''};return l;});return b;}
-function csvExport(dataset,session){
+function csvExport(dataset,session,labelerName=session.labelerName||session.annotator){
  const headers=[...new Set(dataset.records.flatMap(r=>Object.keys(r.raw)))];
- const extra=['_etq_export_version','_etq_anotador','_etq_protocolo','_etq_estado','_etq_relevante','_etq_auxilio_personas','_etq_inundacion_desborde','_etq_ubicaciones_json','_etq_confianza','_etq_observaciones','_etq_fecha','_etq_anotacion_json','_etq_contiene_imagen','_etq_contiene_video'];
+ const extra=['etiquetador','_etq_export_version','_etq_anotador','_etq_protocolo','_etq_estado','_etq_relevante','_etq_auxilio_personas','_etq_inundacion_desborde','_etq_ubicaciones_json','_etq_confianza','_etq_observaciones','_etq_fecha','_etq_anotacion_json','_etq_contiene_imagen','_etq_contiene_video','_etq_nombre_etiquetador'];
  const annotations=new Map(session.annotations.map(a=>[a.id,a]));const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const rows=dataset.records.map(r=>{const a=annotations.get(r.id);return [...headers.map(h=>r.raw[h]||''),'1',session.annotator,session.protocol,a?.status||'pendiente',a?.relevant||'',a?.attention||'',a?.flood||'',a?JSON.stringify(a.locations):'',a?.confidence||'',a?.notes||'',a?.updatedAt||'',a?JSON.stringify(a):'',r.hasImage?'si':'no',r.hasVideo?'si':'no'].map(encodeCell).map(quote).join(',');});
+ const rows=dataset.records.map(r=>{const a=annotations.get(r.id);return [...headers.map(h=>r.raw[h]||''),a?labelerName:'','1',session.annotator,session.protocol,a?.status||'pendiente',a?.relevant||'',a?.attention||'',a?.flood||'',a?JSON.stringify(a.locations):'',a?.confidence||'',a?.notes||'',a?.updatedAt||'',a?JSON.stringify(a):'',r.hasImage?'si':'no',r.hasVideo?'si':'no',labelerName].map(encodeCell).map(quote).join(',');});
  return '\uFEFF'+[headers.concat(extra).map(quote).join(','),...rows].join('\r\n');
 }
 async function fingerprint(records){const value=JSON.stringify(records.map(r=>r.raw));if(globalThis.crypto?.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}let a=2166136261,b=5381;for(let i=0;i<value.length;i++){a=Math.imul(a^value.charCodeAt(i),16777619);b=Math.imul(b,33)^value.charCodeAt(i);}return `portable-${a>>>0}-${b>>>0}-${value.length}`;}

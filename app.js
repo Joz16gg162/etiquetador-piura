@@ -78,7 +78,7 @@ function render(){
  $('postId').textContent=r.id;$('postDate').textContent=r.date?formatDate(r.date):'No indicada';$('titleField').hidden=!r.title;$('postTitle').textContent=r.title||'';$('postText').textContent=r.text;$('mediaPresence').textContent=`Contiene imagen: ${r.hasImage?'Sí':'No'} · Contiene video: ${r.hasVideo?'Sí':'No'}`;$('postLink').hidden=!r.url;if(r.url)$('postLink').href=r.url;else $('postLink').removeAttribute('href');renderMedia(r);
  for(const name of ['relevant','attention','flood'])for(const input of document.querySelectorAll(`input[name="${name}"]`))input.checked=input.value===a[name];
  $('noReference').checked=a.noReference;$('locationRows').replaceChildren();a.locations.forEach(addLocation);$('confidence').value=a.confidence;$('notes').value=a.notes;$('videoSection').hidden=!r.hasVideo;$('videoEvidence').value=a.videoEvidence==='no_aplica'?'no_revisado':a.videoEvidence;$('videoTime').value=a.videoTime;
- $('formFields').disabled=!session;$('markDoubt').disabled=!session;$('saveNext').disabled=!session;$('previous').disabled=ids.indexOf(index)<=0;$('next').disabled=ids.indexOf(index)>=ids.length-1;$('formErrors').hidden=true;setDependent();loading=false;
+ $('formFields').disabled=!session;$('saveNext').disabled=!session;$('previous').disabled=ids.indexOf(index)<=0;$('next').disabled=ids.indexOf(index)>=ids.length-1;$('formErrors').hidden=true;setDependent();loading=false;
 }
 function formatDate(value){const d=new Date(value);if(Number.isNaN(d.getTime()))return value;return new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',dateStyle:'medium',timeStyle:'short'}).format(d)+' · Perú';}
 async function acceptImport(parsed,name){
@@ -92,28 +92,29 @@ async function acceptImport(parsed,name){
   for(const item of parsed.imported){let s=next.sessions.find(s=>s.annotator===item.annotator&&s.protocol===item.protocol);if(!s){s={annotator:item.annotator,protocol:item.protocol,annotations:[]};next.sessions.push(s);}const i=s.annotations.findIndex(a=>a.id===item.annotation.id);if(i<0)s.annotations.push(item.annotation);else s.annotations[i]=item.annotation;}
  }
  dataset=next;index=0;session=null;$('search').value='';$('statusFilter').value='all';
- session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');
+ session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');session.labelerName=parsed.labelerName||session.labelerName||(session.annotator!=='individual'?session.annotator:$('labelerName').value.trim());$('labelerName').value=session.labelerName||'';
  render();await persist();notice(`${dataset.records.length} publicaciones cargadas.${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del CSV.':''}`,true);return true;
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]/gi,'_').slice(0,60);
-async function exportCSV(){if(!session)return;collectDraft();await persist();download(`etiquetas_${slug(dataset.name.replace(/\.csv$/i,'').replace(/^etiquetas_/i,''))}.csv`,C.csvExport(dataset,session),'text/csv;charset=utf-8');notice('CSV descargado. Incluye tus publicaciones y etiquetas. Puedes importarlo para continuar en otro ordenador.',true);}
+async function exportCSV(){if(!session)return;const name=$('labelerName').value.trim();if(!name){notice('Escribe el nombre del etiquetador antes de exportar.');$('labelerName').focus();return;}session.labelerName=name;collectDraft();await persist();download(`etiquetas_${slug(dataset.name.replace(/\.csv$/i,'').replace(/^etiquetas_/i,''))}.csv`,C.csvExport(dataset,session,name),'text/csv;charset=utf-8');notice('CSV descargado. Incluye tus publicaciones y etiquetas. Puedes importarlo para continuar en otro ordenador.',true);}
 function template(){download('plantilla_publicaciones.csv','\uFEFFid,texto,fecha,url,imagenes,videos,miniaturas\r\n"EJEMPLO-001","Texto de la publicación","2023-03-10T15:00:00-05:00","","https://ejemplo.org/foto1.jpg|https://ejemplo.org/foto2.jpg","",""\r\n','text/csv;charset=utf-8');}
-async function saveAndAdvance(doubt){
- if(!session)return;const a=readForm(),r=dataset.records[index];doubt=doubt||a.confidence==='con_duda';if(doubt)a.confidence='con_duda';const e=C.errors(a,r,doubt);if(e.length){$('formErrors').textContent=e.join('\n');$('formErrors').hidden=false;$('formErrors').scrollIntoView({block:'center',behavior:'smooth'});return;}
+async function saveAndAdvance(){
+ if(!session)return;const a=readForm(),r=dataset.records[index];const doubt=a.confidence==='con_duda';const e=C.errors(a,r,doubt);if(e.length){$('formErrors').textContent=e.join('\n');$('formErrors').hidden=false;$('formErrors').scrollIntoView({block:'center',behavior:'smooth'});return;}
  a.status=doubt?'duda':'completa';a.updatedAt=new Date().toISOString();upsert(a);await persist();const prior=index,ids=matching(),next=ids.find(i=>i>prior);if(next!==undefined)index=next;else if(!ids.includes(prior)&&ids.length)index=ids[0];render();notice(doubt?'Caso marcado con duda. Queda pendiente de consenso.':next===undefined?'Respuesta guardada. Llegaste al final de esta selección.':'Respuesta guardada.',true);
  await persist();$('postPosition').scrollIntoView({block:'start',behavior:'smooth'});
 }
 async function move(direction){collectDraft();const ids=matching(),pos=ids.indexOf(index),target=ids[pos+direction];if(target===undefined)return;index=target;await persist();render();$('postPosition').scrollIntoView({block:'start',behavior:'smooth'});}
 $('annotationForm').addEventListener('input',()=>{if(!loading){setDependent();scheduleSave();}});
 $('annotationForm').addEventListener('change',()=>{if(!loading){setDependent();scheduleSave();}});
-$('annotationForm').addEventListener('submit',e=>{e.preventDefault();saveAndAdvance(false).catch(fail);});
- $('markDoubt').addEventListener('click',()=>saveAndAdvance(true).catch(fail));$('previous').addEventListener('click',()=>move(-1).catch(fail));$('next').addEventListener('click',()=>move(1).catch(fail));
+$('annotationForm').addEventListener('submit',e=>{e.preventDefault();saveAndAdvance().catch(fail);});
+$('previous').addEventListener('click',()=>move(-1).catch(fail));$('next').addEventListener('click',()=>move(1).catch(fail));
 $('addLocation').addEventListener('click',()=>{addLocation();scheduleSave();});
 for(const id of ['statusFilter','search'])$(id).addEventListener(id==='search'?'input':'change',async()=>{collectDraft();render();await persist();});
 $('jump').addEventListener('change',async()=>{collectDraft();index=Number($('jump').value);render();await persist();});
 $('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{if(!f)return;if(f.size>20*1024*1024)throw Error('El CSV supera 20 MB. Divídelo en lotes para etiquetar con comodidad.');let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(await f.arrayBuffer());}catch{throw Error('Guarda el CSV con codificación UTF-8 y vuelve a importarlo.');}await acceptImport(C.normalize(C.csv(text)),f.name);}catch(err){fail(err);}finally{e.target.value='';}});
 $('demoButton').addEventListener('click',()=>acceptImport(C.normalize(C.csv(window.PIURA_DEMO_CSV)),'Ejemplos ficticios · 8 publicaciones').catch(fail));
+$('labelerName').addEventListener('input',()=>{if(session){session.labelerName=$('labelerName').value.trim();persist();}});
 $('templateButton').addEventListener('click',template);$('exportCSV').addEventListener('click',()=>exportCSV().catch(fail));
 $('closeImage').addEventListener('click',()=>{$('imageDialog').close();$('largeImage').removeAttribute('src');});
 document.addEventListener('selectionchange',()=>{const s=window.getSelection();if(!dataset||!s||s.isCollapsed||!s.anchorNode||!s.focusNode)return;if($('postText').contains(s.anchorNode)&&$('postText').contains(s.focusNode)){const text=s.toString().trim();if(text&&text.length<=500)selectedReference={id:dataset.records[index].id,text};}});
@@ -122,7 +123,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{if(dataset){collectDraft();persist();}});
 window.addEventListener('beforeunload',e=>{if(persistTimer){collectDraft();persist();e.preventDefault();e.returnValue='';}});
 async function start(){
- try{db=await dbOpen();const meta=await dbGet('meta','last');if(meta){dataset=await dbGet('datasets',meta.id);if(dataset){dataset.records=C.normalize(dataset.records.map(r=>r.raw)).records;session=C.fileLabels(dataset,meta.annotator||'');index=Math.min(Math.max(Number(meta.index)||0,0),dataset.records.length-1);render();$('saveStatus').textContent='Avance recuperado de este navegador';}}}
+ try{db=await dbOpen();const meta=await dbGet('meta','last');if(meta){dataset=await dbGet('datasets',meta.id);if(dataset){dataset.records=C.normalize(dataset.records.map(r=>r.raw)).records;session=C.fileLabels(dataset,meta.annotator||'');$('labelerName').value=session.labelerName||(session.annotator!=='individual'?session.annotator:'');index=Math.min(Math.max(Number(meta.index)||0,0),dataset.records.length-1);render();$('saveStatus').textContent='Avance recuperado de este navegador';}}}
  catch{db=null;notice('El guardado del navegador no está disponible. Exporta tu CSV antes de cerrar.');}
 }
 start().catch(fail);
