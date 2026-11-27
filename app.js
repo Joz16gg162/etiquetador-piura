@@ -73,6 +73,7 @@ function renderMedia(r){
 function render(){
  if(!dataset)return;loading=true;selectedReference=null;$('workspace').hidden=false;$('welcome').hidden=true;$('datasetTitle').textContent=dataset.name;updateProgress();const ids=refreshNavigation();
  const protocol=C.protocols[PROTOCOL];$('attentionQuestion').textContent='Auxilio a personas';$('attentionHelp').textContent=protocol.help;
+ $('currentPost').hidden=!ids.length;$('currentPostNumber').textContent=String(index+1);$('currentPostTotal').textContent=String(dataset.records.length);
  if(!ids.length){loading=false;return;}
  const r=dataset.records[index],a=annotation()||C.blank(r.id);$('postPosition').textContent=`Publicación ${index+1} de ${dataset.records.length}`;$('postStatus').textContent=statusLabels[a.status]||'Pendiente';$('postStatus').className='badge '+(annotation()?a.status:'pendiente');if(!annotation())$('postStatus').textContent='Pendiente';
  $('postId').textContent=r.id;$('postDate').textContent=r.date?formatDate(r.date):'No indicada';$('titleField').hidden=!r.title;$('postTitle').textContent=r.title||'';$('postText').textContent=r.text;$('mediaPresence').textContent=`Contiene imagen: ${r.hasImage?'Sí':'No'} · Contiene video: ${r.hasVideo?'Sí':'No'}`;$('postLink').hidden=!r.url;if(r.url)$('postLink').href=r.url;else $('postLink').removeAttribute('href');renderMedia(r);
