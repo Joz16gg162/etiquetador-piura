@@ -14,6 +14,10 @@ Página estática para importar CSV o Excel (.xlsx y .xls), revisar texto e imá
 
 **Publicación** separa ID, fecha y hora, título cuando esté incluido, contenido e imágenes/videos. X no exige un título: si el CSV no tiene `titulo`, `título` o `title`, no se genera uno ni se divide artificialmente el texto. **Etiquetas** agrupa los valores que debe registrar la persona, conservando las reglas del protocolo.
 
+En pantallas de al menos 1100 px de ancho y 600 px de alto, el archivo y el avance ocupan una cabecera compacta. **Publicación** y **Etiquetas** aparecen lado a lado y aprovechan el alto disponible. Cada panel permite desplazarse de forma independiente si el texto, los medios o las ubicaciones son extensos; los botones para guardar y avanzar permanecen visibles. **Ver criterios** despliega las explicaciones completas del protocolo y **Uso** conserva las instrucciones. En móvil, con zoom elevado o con poco alto de pantalla se usa el desplazamiento habitual para mantener campos y textos legibles.
+
+**Borrar etiquetas** permite reiniciar el archivo cargado sin volver a importarlo. Pide confirmación; cancelar conserva el trabajo. Confirmar vacía el etiquetado activo y el nombre, vuelve a la primera publicación, limpia los filtros y guarda un avance de 0 completadas. Las publicaciones originales se conservan. Las sesiones anteriores quedan en el historial local interno, separadas del etiquetado y de la exportación nuevos. La protección de escrituras también impide que una pestaña anterior deshaga este reinicio.
+
 ## Archivos y guardado
 
 El CSV o Excel y las etiquetas se procesan en el navegador. GitHub solo aloja el programa y ejemplos ficticios. El archivo no se envía a GitHub ni a un servidor de almacenamiento. Los enlaces a medios se cargan desde sus servidores originales; las búsquedas de mapas envían solo la consulta al proveedor al pulsar el enlace.
@@ -91,4 +95,4 @@ Para inspección visual local, se puede servir esta carpeta con cualquier servid
 
 ## Publicación
 
-El repositorio público debe contener únicamente código, documentación y ejemplos ficticios. En GitHub Pages, publicar desde la raíz de la rama configurada. No hay compilación ni instalación para usar o publicar la página: `index.html`, `styles.css`, `layout.css`, `core.js`, `storage.js`, `app.js`, `excel.js`, `demo.js`, `vendor/` y `assets/` constituyen la aplicación. `.nojekyll` evita procesamiento Jekyll. No se requiere una clave API ni un dominio propio.
+El repositorio público debe contener únicamente código, documentación y ejemplos ficticios. En GitHub Pages, publicar desde la raíz de la rama configurada. No hay compilación ni instalación para usar o publicar la página: `index.html`, `styles.css`, `layout.css`, `workspace.css`, `core.js`, `storage.js`, `app.js`, `excel.js`, `demo.js`, `vendor/` y `assets/` constituyen la aplicación. `.nojekyll` evita procesamiento Jekyll. No se requiere una clave API ni un dominio propio.

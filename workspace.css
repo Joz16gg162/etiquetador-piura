@@ -1,0 +1,63 @@
+/* Keep source and labels together while giving long content its own scroll. */
+main{max-width:1800px}
+.hide-criteria .question>.help,.hide-criteria #locationHelp{display:none}
+#toggleCriteria{font-size:.9rem;min-height:38px;padding:6px 12px}
+.danger-button{color:#963b35;border-color:#caaba7}.danger-button:hover{background:#fff0ee}
+.file-identity{min-width:0}.usage{border-top:0}.usage summary{color:#3b594a}
+.question-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.question-label{font-weight:750;line-height:1.35;flex:1;min-width:0}.question-row .choices{margin:0;flex:none}
+.questions{grid-template-columns:1fr}.question{display:block}.question legend.sr-only{width:1px;max-width:1px;height:1px;min-height:0}
+body.has-dataset .usage:not([open]){padding-top:8px;padding-bottom:8px}
+@media(min-width:1100px) and (min-height:600px){
+ body.has-dataset{height:100dvh;overflow:hidden}
+ .has-dataset main{height:100%;max-width:none;padding:12px 18px;display:flex;flex-direction:column;gap:10px}
+ .has-dataset .page-header{display:flex;align-items:baseline;gap:16px;margin:0;flex:none}
+ .has-dataset .page-header h1{font-size:1.4rem}.has-dataset .page-header .eyebrow{font-size:.8rem;margin:0}
+ .has-dataset .file-panel{flex:none;display:flex;align-items:center;gap:12px;padding:9px 12px;position:relative;overflow:visible}
+ .has-dataset .file-panel>.panel-heading{order:2;border:0;padding:0;background:none;flex:none}.has-dataset .file-panel>.panel-heading h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .has-dataset .file-actions{gap:6px}.has-dataset .file-actions button,.has-dataset .file-actions .button{font-size:.89rem;padding:8px 10px;min-height:42px}
+ .has-dataset .file-summary{display:grid;grid-template-columns:minmax(120px,1fr) minmax(180px,230px);align-items:center;gap:16px;padding:0;flex:1;min-width:0}
+ .has-dataset .file-identity>.field-label{font-size:.8rem}.has-dataset #datasetTitle{font-size:.94rem;margin:0;line-height:1.3;max-height:2.6em;overflow:auto}
+ .has-dataset .labeler-field{font-size:.8rem;margin:0;line-height:1.3}.has-dataset .labeler-field input{margin:2px 0 0;min-width:0;width:100%;min-height:38px;padding:6px 9px;font-size:.94rem}
+ .has-dataset .usage{order:3;padding:0;margin:0;flex:none}.has-dataset .usage summary{font-size:.88rem}
+ .has-dataset .usage ul{position:absolute;right:0;top:100%;width:min(550px,95vw);z-index:20;background:white;border:1px solid #9ab3a5;border-radius:9px;padding:18px 20px 18px 38px;box-shadow:0 8px 24px #17372f25}
+ .has-dataset #notice{margin:0;padding:8px 14px;flex:none;font-size:.89rem;max-height:90px;overflow:auto}
+ .has-dataset #notice.success{position:fixed;bottom:14px;left:28px;max-width:520px;z-index:30;box-shadow:0 4px 16px #17372f25}
+ .has-dataset .work-area{margin:0;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+ .has-dataset .work-header{position:static;gap:20px;padding:8px 16px;flex:none}
+ .has-dataset .current-post{display:flex;align-items:baseline;gap:10px;padding:0 20px 0 0}.has-dataset .current-post>span:first-child{font-size:.94rem;margin-bottom:0}.has-dataset .current-post strong{font-size:2rem}.has-dataset .current-post .position-value{font-size:1.12rem}
+ .has-dataset .progress-heading h2{font-size:.94rem;line-height:1.1}.has-dataset #progressPercent{font-size:1.15rem;line-height:1.1}.has-dataset .work-header progress{height:8px;margin:4px 0}
+ .has-dataset .progress-summary p{font-size:.88rem;line-height:1.25}.has-dataset .work-header #saveStatus{font-size:.8rem;max-width:320px;line-height:1.25}
+ .has-dataset .work-content{flex:1;min-height:0;display:flex;flex-direction:column;padding:10px}
+ .has-dataset .navigation{flex:none;grid-template-columns:1fr 1.4fr 1fr;gap:18px;margin:0 0 10px}
+ .has-dataset .navigation>label{display:flex;align-items:center;gap:9px;min-width:0;font-size:.89rem;white-space:nowrap}
+ .has-dataset .navigation select,.has-dataset .navigation input{margin:0;min-height:40px;padding:7px 32px 7px 10px;font-size:.94rem;min-width:0}
+ .has-dataset #editor{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(440px,1fr);gap:12px;flex:1;min-height:0}
+ .has-dataset .publication-panel,.has-dataset .labels-panel{min-height:0;min-width:0;display:flex;flex-direction:column;margin:0}
+ .has-dataset .publication-panel{overflow:auto;scrollbar-gutter:stable}
+ .has-dataset .panel-heading{padding:10px 14px;gap:12px;flex:none}.has-dataset .panel-heading h2{font-size:1.12rem}.has-dataset .panel-heading p{font-size:.9rem;margin-top:2px}
+ .has-dataset .publication-panel>.panel-heading{position:sticky;top:0;z-index:2;background:#edf3ef}
+ .has-dataset .publication-panel #postPosition{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .has-dataset .post-metadata{padding:10px 14px;gap:10px;flex-wrap:wrap;flex:none}.has-dataset .post-metadata dl{gap:12px 24px}.has-dataset .post-metadata dt{font-size:.8rem}.has-dataset .post-metadata dd{font-size:.89rem;margin-top:2px}.has-dataset .post-metadata a{font-size:.86rem}
+ .has-dataset .publication-body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-content:start}.has-dataset .text-column,.has-dataset .media-column{padding:14px}.has-dataset .media-column{border-left:1px solid #d5e0d9;border-top:0}
+ .has-dataset .post-text{font-size:1.08rem;line-height:1.5;margin:0}.has-dataset .field-heading{font-size:.94rem;margin-bottom:8px}.has-dataset .media-presence{margin:0 0 10px;font-size:.84rem}
+ .has-dataset .media{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.has-dataset .media img,.has-dataset .media video{max-height:clamp(160px,28dvh,280px);object-fit:contain}.has-dataset .media figure{margin:0}.has-dataset .media figcaption{font-size:.8rem}.has-dataset .media>p{grid-column:1/-1}
+ .has-dataset .labels-panel form{display:flex;flex-direction:column;flex:1;min-height:0;padding:0;margin:0}
+ .has-dataset #formFields{flex:1;min-height:0;overflow:auto;padding:12px;scrollbar-gutter:stable}
+ .has-dataset .questions{grid-template-columns:1fr;gap:8px}
+ .has-dataset .question{display:block;padding:10px 12px;min-width:0}
+ .has-dataset .question-label{font-size:.94rem}
+ .has-dataset .question .choices{width:140px;min-width:0;margin:0 0 0 auto;gap:8px}.has-dataset .question .choices label{min-height:38px;min-width:0;padding:5px 8px;font-size:.94rem}
+ .has-dataset .question .help{clear:both;padding-top:8px;margin:0;font-size:.86rem}
+ .has-dataset .locations{padding:10px 12px;margin:10px 0}.has-dataset .section-head h3{font-size:1rem}.has-dataset #addLocation{min-height:36px;padding:6px 10px;font-size:.89rem}.has-dataset .check{margin:8px 0;font-size:.89rem}
+ .has-dataset .closing-fields{padding-top:10px;margin:10px 0 0;gap:12px}.has-dataset .closing-fields>label{font-size:.89rem}.has-dataset .closing-fields>.notes{flex:1.5}
+ .has-dataset .closing-fields select,.has-dataset .closing-fields textarea{font-size:.94rem;min-height:40px;margin-top:4px;padding:7px 10px}.has-dataset .closing-fields .help{font-size:.8rem;line-height:1.35;margin-top:5px}
+ .has-dataset .editor-actions{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:10px;margin:0;background:white;border-top:1px solid #b7c9bf}
+ .has-dataset .editor-actions button{min-height:42px;padding:8px 10px;font-size:.89rem}.has-dataset #saveNext{min-width:0}
+ .has-dataset .form-errors{flex:none;margin:0;max-height:100px;overflow:auto;padding:8px 12px;font-size:.86rem}
+ .has-dataset #postPosition{scroll-margin-top:65px}.has-dataset .location-grid{grid-template-columns:1fr 1fr}.has-dataset .location-grid .wide{grid-column:1/-1}
+ .has-dataset footer{display:none}
+}
+@media(min-width:1100px) and (max-width:1250px) and (min-height:600px){
+ .has-dataset .file-panel{flex-wrap:wrap;gap:8px}.has-dataset .file-summary{flex-basis:calc(100% - 70px);order:1}.has-dataset .file-panel>.panel-heading{order:3}.has-dataset .usage{order:2}.has-dataset #editor{grid-template-columns:minmax(0,1fr) minmax(440px,1fr)}
+}
+@media(max-width:650px){.question-row{flex-wrap:wrap}.question-label{flex-basis:100%}.question-row .choices{width:100%}}

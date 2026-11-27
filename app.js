@@ -6,7 +6,8 @@ let dataset=null,session=null,index=0,db=null,legacyDb=null,persistTimer=null,sa
 const revisions=new Map();
 const PROTOCOL='auxilio_v1';
 const statusLabels={borrador:'Borrador',completa:'Completada',duda:'Con duda'};
-function notice(text,success=false){$('notice').textContent=text;$('notice').className='notice'+(success?' success':'');$('notice').hidden=!text;}
+let noticeTimer=null;
+function notice(text,success=false){clearTimeout(noticeTimer);$('notice').textContent=text;$('notice').className='notice'+(success?' success':'');$('notice').hidden=!text;if(success)noticeTimer=setTimeout(()=>{$('notice').hidden=true;},6000);}
 async function storedDataset(id){return (db?await LabelStorage.get(db,'datasets',id):null)||(legacyDb?await LabelStorage.get(legacyDb,'datasets',id):null);}
 function persist(){
  clearTimeout(persistTimer);persistTimer=null;if(!dataset)return Promise.resolve(true);if(storageConflict)return Promise.resolve(false);
@@ -43,7 +44,7 @@ function collectDraft(){
 function scheduleSave(){collectDraft();clearTimeout(persistTimer);$('saveStatus').textContent='Cambios pendientes de guardar…';persistTimer=setTimeout(()=>persist(),350);}
 function updateProgress(){if(!dataset)return;const values=session?.annotations||[],complete=values.filter(a=>a.status==='completa').length,doubts=values.filter(a=>a.status==='duda').length;const drafts=values.filter(a=>a.status==='borrador').length;
  $('progress').max=dataset.records.length;$('progress').value=complete;$('progressText').textContent=`${complete} de ${dataset.records.length} completadas · ${dataset.records.length-complete-doubts} pendientes · ${doubts} con duda`;$('progressPercent').textContent=(dataset.records.length?100*complete/dataset.records.length:0).toLocaleString('es-PE',{maximumFractionDigits:1})+' %';
- $('exportCSV').disabled=!session;$('exportExcel').disabled=!session;
+ $('exportCSV').disabled=!session;$('exportExcel').disabled=!session;$('clearLabels').disabled=!session;
 }
 function matching(){const labels=new Map((session?.annotations||[]).map(a=>[a.id,a]));const term=$('search').value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),filter=$('statusFilter').value;return dataset.records.flatMap((r,i)=>{const a=labels.get(r.id);const status=a?.status||'pendiente';const normalized=(r.id+' '+r.text).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return normalized.includes(term)&&(filter==='all'||filter===status||(filter==='pending'&&['pendiente','borrador'].includes(status)))?[i]:[];});}
 function refreshNavigation(){const ids=matching();$('jump').replaceChildren(...ids.map(i=>{const o=document.createElement('option');o.value=String(i);o.textContent=`${i+1} · ${dataset.records[i].id}`;return o;}));if(!ids.includes(index)&&ids.length)index=ids[0];$('jump').value=String(index);$('emptyFilter').hidden=!!ids.length;$('editor').hidden=!ids.length;return ids;}
@@ -79,7 +80,7 @@ function renderMedia(r){
  if(!r.photos.length&&!r.thumbs.length&&!r.videos.length){const p=document.createElement('div');p.className='placeholder';p.textContent=r.hasVideo?'El CSV indica video, pero no incluye un enlace.':r.hasImage?'El CSV indica imagen, pero no incluye un enlace.':'Esta publicación no tiene imágenes ni videos adjuntos.';media.append(p);}
 }
 function render(){
- if(!dataset)return;loading=true;selectedReference=null;$('workspace').hidden=false;$('welcome').hidden=true;$('datasetTitle').textContent=dataset.name;updateProgress();const ids=refreshNavigation();
+ if(!dataset)return;const firstLoad=!document.body.classList.contains('has-dataset');document.body.classList.add('has-dataset');if(firstLoad)$('usage').open=false;loading=true;selectedReference=null;$('workspace').hidden=false;$('welcome').hidden=true;$('datasetTitle').textContent=dataset.name;updateProgress();const ids=refreshNavigation();
  const protocol=C.protocols[PROTOCOL];$('attentionQuestion').textContent='Auxilio a personas';$('attentionHelp').textContent=protocol.help;
  $('currentPost').hidden=!ids.length;$('currentPostNumber').textContent=String(index+1);$('currentPostTotal').textContent=String(dataset.records.length);
  if(!ids.length){loading=false;return;}
@@ -113,6 +114,16 @@ async function acceptImport(parsed,name){
 }
 async function chooseImportMode(){
  const dialog=$('importModeDialog');dialog.returnValue='cancel';const closed=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(['fresh','resume'].includes(dialog.returnValue)?dialog.returnValue:'cancel'),{once:true}));dialog.showModal();return closed;
+}
+async function clearLabels(){
+ await ready;if(!dataset)return;
+ if(!confirm('¿Borrar todas las etiquetas de este archivo y empezar desde cero? Las publicaciones se conservarán. El avance quedará en 0 y el nombre del etiquetador se vaciará.'))return;
+ clearTimeout(persistTimer);persistTimer=null;await saveChain;
+ const stored=await storedDataset(dataset.id)||dataset;
+ dataset={...stored,sessions:[],activeAnnotator:'',annotationHistory:[...(stored.annotationHistory||[]),{savedAt:new Date().toISOString(),sessions:clone(stored.sessions),activeAnnotator:stored.activeAnnotator||''}]};
+ revisions.set(dataset.id,stored._storageRevision||0);storageConflict=false;index=0;session=C.fileLabels(dataset);session.labelerName='';$('labelerName').value='';$('search').value='';$('statusFilter').value='all';
+ for(const id of ['jump','statusFilter','search','labelerName'])$(id).disabled=false;
+ render();if(await persist())notice(`Etiquetas borradas. 0 de ${dataset.records.length} completadas.`,true);
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]/gi,'_').slice(0,60);
@@ -148,6 +159,8 @@ $('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{a
 $('demoButton').addEventListener('click',async()=>{try{await ready;await acceptImport(C.normalize(C.csv(window.PIURA_DEMO_CSV)),'Ejemplos ficticios · 8 publicaciones');}catch(err){fail(err);}});
 $('labelerName').addEventListener('input',()=>{if(session){session.labelerName=$('labelerName').value.trim();persist();}});
 $('templateButton').addEventListener('click',template);$('exportCSV').addEventListener('click',()=>exportFile('csv').catch(fail));$('exportExcel').addEventListener('click',()=>exportFile('xlsx').catch(fail));
+$('clearLabels').addEventListener('click',()=>clearLabels().catch(fail));
+$('toggleCriteria').addEventListener('click',()=>{const expanded=$('toggleCriteria').getAttribute('aria-expanded')!=='true';$('toggleCriteria').setAttribute('aria-expanded',String(expanded));$('toggleCriteria').textContent=expanded?'Ocultar criterios':'Ver criterios';$('annotationForm').classList.toggle('hide-criteria',!expanded);});
 $('closeImage').addEventListener('click',()=>{$('imageDialog').close();$('largeImage').removeAttribute('src');});
 document.addEventListener('selectionchange',()=>{const s=window.getSelection();if(!dataset||!s||s.isCollapsed||!s.anchorNode||!s.focusNode)return;if($('postText').contains(s.anchorNode)&&$('postText').contains(s.focusNode)){const text=s.toString().trim();if(text&&text.length<=500)selectedReference={id:dataset.records[index].id,text};}});
 function fail(error){notice(error.message||'No se pudo completar la operación.');}
