@@ -2,19 +2,27 @@
 (() => {
 'use strict';
 const C=LabelCore,$=id=>document.getElementById(id),clone=v=>JSON.parse(JSON.stringify(v));
-let dataset=null,session=null,index=0,db=null,persistTimer=null,saveChain=Promise.resolve(),loading=false,selectedReference=null;
+let dataset=null,session=null,index=0,db=null,legacyDb=null,persistTimer=null,saveChain=Promise.resolve(),loading=false,selectedReference=null,storageConflict=false;
+const revisions=new Map();
 const PROTOCOL='auxilio_v1';
 const statusLabels={borrador:'Borrador',completa:'Completada',duda:'Con duda'};
 function notice(text,success=false){$('notice').textContent=text;$('notice').className='notice'+(success?' success':'');$('notice').hidden=!text;}
-function dbOpen(){return new Promise((resolve,reject)=>{const r=indexedDB.open('piura-etiquetador-v1',1);r.onupgradeneeded=()=>{r.result.createObjectStore('datasets',{keyPath:'id'});r.result.createObjectStore('meta');};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Otra pestaña mantiene abierta una versión antigua.'));});}
-function dbGet(store,key){return new Promise((resolve,reject)=>{const t=db.transaction(store,'readonly'),r=t.objectStore(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-function dbWrite(value,meta){return new Promise((resolve,reject)=>{const t=db.transaction(['datasets','meta'],'readwrite');t.objectStore('datasets').put(value);t.objectStore('meta').put(meta,'last');t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error||Error('Guardado cancelado.'));});}
+async function storedDataset(id){return (db?await LabelStorage.get(db,'datasets',id):null)||(legacyDb?await LabelStorage.get(legacyDb,'datasets',id):null);}
 function persist(){
- clearTimeout(persistTimer);persistTimer=null;if(!dataset)return Promise.resolve();
+ clearTimeout(persistTimer);persistTimer=null;if(!dataset)return Promise.resolve(true);if(storageConflict)return Promise.resolve(false);
  const snapshot=clone(dataset),meta={id:dataset.id,index,annotator:session?.annotator||'',protocol:PROTOCOL};
  $('saveStatus').textContent='Guardando en este navegador…';
- if(!db){$('saveStatus').textContent='Sin guardado local: exporta tu trabajo';return Promise.resolve();}
- saveChain=saveChain.catch(()=>{}).then(()=>dbWrite(snapshot,meta)).then(()=>{$('saveStatus').textContent='Guardado en este navegador';}).catch(()=>{$('saveStatus').textContent='No se pudo guardar: exporta tu trabajo';notice('No se pudo guardar el avance en el navegador. Exporta en Excel o CSV antes de cerrar.');});return saveChain;
+ if(!db){$('saveStatus').textContent='Sin guardado local: exporta tu trabajo';return Promise.resolve(true);}
+ saveChain=saveChain.catch(()=>{}).then(async()=>{
+  if(storageConflict)return false;
+  const expected=revisions.get(snapshot.id)??snapshot._storageRevision??0;
+  const revision=await LabelStorage.write(db,snapshot,meta,expected);revisions.set(snapshot.id,revision);if(dataset?.id===snapshot.id)dataset._storageRevision=revision;
+  $('saveStatus').textContent='Guardado en este navegador';return true;
+ }).catch(error=>{
+  if(error.code==='STALE_TAB'){storageConflict=true;$('saveStatus').textContent='Pestaña desactualizada';$('formFields').disabled=true;for(const id of ['saveNext','previous','next','jump','statusFilter','search','labelerName'])$(id).disabled=true;notice(error.message);}
+  else{$('saveStatus').textContent='No se pudo guardar: exporta tu trabajo';notice('No se pudo guardar el avance en el navegador. Exporta en Excel o CSV antes de cerrar.');}
+  return false;
+ });return saveChain;
 }
 function annotation(){return session?.annotations.find(a=>a.id===dataset.records[index]?.id)||null;}
 function upsert(a){const i=session.annotations.findIndex(x=>x.id===a.id);if(i<0)session.annotations.push(a);else session.annotations[i]=a;}
@@ -83,8 +91,8 @@ function render(){
 }
 function formatDate(value){const d=new Date(value);if(Number.isNaN(d.getTime()))return value;return new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',dateStyle:'medium',timeStyle:'short'}).format(d)+' · Perú';}
 async function acceptImport(parsed,name){
- if(dataset){collectDraft();await persist();}
- const id=await C.fingerprint(parsed.records);let stored=db?await dbGet('datasets',id):null;
+ if(dataset){collectDraft();if(!await persist())return false;}
+ const id=await C.fingerprint(parsed.records);let stored=await storedDataset(id);
  if(stored&&JSON.stringify(stored.records.map(r=>r.raw))!==JSON.stringify(parsed.records.map(r=>r.raw)))throw Error('Este archivo coincide con un identificador local de otro contenido. Conserva los CSV y usa otro navegador para importarlos por separado.');
  let next=stored||{id,name,records:parsed.records,sessions:[]},restarted=false,resumed=false;
  if(stored&&!parsed.imported.length&&stored.sessions.some(s=>s.annotations.length||s.labelerName)){
@@ -99,9 +107,9 @@ async function acceptImport(parsed,name){
   if(conflict&&!confirm('El archivo contiene etiquetas distintas de las guardadas para este archivo. ¿Reemplazar las etiquetas locales por las del CSV? Cancela para conservar las actuales.'))return false;
   for(const item of parsed.imported){let s=next.sessions.find(s=>s.annotator===item.annotator&&s.protocol===item.protocol);if(!s){s={annotator:item.annotator,protocol:item.protocol,annotations:[]};next.sessions.push(s);}const i=s.annotations.findIndex(a=>a.id===item.annotation.id);if(i<0)s.annotations.push(item.annotation);else s.annotations[i]=item.annotation;}
  }
- dataset=next;index=0;session=null;$('search').value='';$('statusFilter').value='all';
+ dataset=next;revisions.set(id,next._storageRevision||0);index=0;session=null;$('search').value='';$('statusFilter').value='all';
  session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');session.labelerName=restarted?'':parsed.labelerName||session.labelerName||(session.annotator!=='individual'?session.annotator:$('labelerName').value.trim());$('labelerName').value=session.labelerName||'';
- render();await persist();notice(`${dataset.records.length} publicaciones cargadas.${restarted?' Etiquetado iniciado desde cero.':resumed?' Se recuperó el avance guardado en este navegador.':''}${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del archivo.':''}`,true);return true;
+ render();if(!await persist())return false;notice(`${dataset.records.length} publicaciones cargadas.${restarted?' Etiquetado iniciado desde cero.':resumed?' Se recuperó el avance guardado en este navegador.':''}${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del archivo.':''}`,true);return true;
 }
 async function chooseImportMode(){
  const dialog=$('importModeDialog');dialog.returnValue='cancel';const closed=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(['fresh','resume'].includes(dialog.returnValue)?dialog.returnValue:'cancel'),{once:true}));dialog.showModal();return closed;
@@ -125,10 +133,10 @@ async function importFile(f){
 function template(){download('plantilla_publicaciones.csv','\uFEFFid,texto,fecha,url,imagenes,videos,miniaturas\r\n"EJEMPLO-001","Texto de la publicación","2023-03-10T15:00:00-05:00","","https://ejemplo.org/foto1.jpg|https://ejemplo.org/foto2.jpg","",""\r\n','text/csv;charset=utf-8');}
 async function saveAndAdvance(){
  if(!session)return;const a=readForm(),r=dataset.records[index];const doubt=a.confidence==='con_duda';const e=C.errors(a,r,doubt);if(e.length){$('formErrors').textContent=e.join('\n');$('formErrors').hidden=false;$('formErrors').scrollIntoView({block:'center',behavior:'smooth'});return;}
- a.status=doubt?'duda':'completa';a.updatedAt=new Date().toISOString();upsert(a);await persist();const prior=index,ids=matching(),next=ids.find(i=>i>prior);if(next!==undefined)index=next;else if(!ids.includes(prior)&&ids.length)index=ids[0];render();notice(doubt?'Caso marcado con duda. Queda pendiente de consenso.':next===undefined?'Respuesta guardada. Llegaste al final de esta selección.':'Respuesta guardada.',true);
+ a.status=doubt?'duda':'completa';a.updatedAt=new Date().toISOString();upsert(a);if(!await persist())return;const prior=index,ids=matching(),next=ids.find(i=>i>prior);if(next!==undefined)index=next;else if(!ids.includes(prior)&&ids.length)index=ids[0];render();notice(doubt?'Caso marcado con duda. Queda pendiente de consenso.':next===undefined?'Respuesta guardada. Llegaste al final de esta selección.':'Respuesta guardada.',true);
  await persist();$('postPosition').scrollIntoView({block:'start',behavior:'smooth'});
 }
-async function move(direction){collectDraft();const ids=matching(),pos=ids.indexOf(index),target=ids[pos+direction];if(target===undefined)return;index=target;await persist();render();$('postPosition').scrollIntoView({block:'start',behavior:'smooth'});}
+async function move(direction){collectDraft();const ids=matching(),pos=ids.indexOf(index),target=ids[pos+direction];if(target===undefined)return;index=target;if(!await persist())return;render();$('postPosition').scrollIntoView({block:'start',behavior:'smooth'});}
 $('annotationForm').addEventListener('input',()=>{if(!loading){setDependent();scheduleSave();}});
 $('annotationForm').addEventListener('change',()=>{if(!loading){setDependent();scheduleSave();}});
 $('annotationForm').addEventListener('submit',e=>{e.preventDefault();saveAndAdvance().catch(fail);});
@@ -136,19 +144,19 @@ $('previous').addEventListener('click',()=>move(-1).catch(fail));$('next').addEv
 $('addLocation').addEventListener('click',()=>{addLocation();scheduleSave();});
 for(const id of ['statusFilter','search'])$(id).addEventListener(id==='search'?'input':'change',async()=>{collectDraft();render();await persist();});
 $('jump').addEventListener('change',async()=>{collectDraft();index=Number($('jump').value);render();await persist();});
-$('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{if(f)await importFile(f);}catch(err){fail(err);}finally{e.target.value='';}});
-$('demoButton').addEventListener('click',()=>acceptImport(C.normalize(C.csv(window.PIURA_DEMO_CSV)),'Ejemplos ficticios · 8 publicaciones').catch(fail));
+$('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{await ready;if(f)await importFile(f);}catch(err){fail(err);}finally{e.target.value='';}});
+$('demoButton').addEventListener('click',async()=>{try{await ready;await acceptImport(C.normalize(C.csv(window.PIURA_DEMO_CSV)),'Ejemplos ficticios · 8 publicaciones');}catch(err){fail(err);}});
 $('labelerName').addEventListener('input',()=>{if(session){session.labelerName=$('labelerName').value.trim();persist();}});
 $('templateButton').addEventListener('click',template);$('exportCSV').addEventListener('click',()=>exportFile('csv').catch(fail));$('exportExcel').addEventListener('click',()=>exportFile('xlsx').catch(fail));
 $('closeImage').addEventListener('click',()=>{$('imageDialog').close();$('largeImage').removeAttribute('src');});
 document.addEventListener('selectionchange',()=>{const s=window.getSelection();if(!dataset||!s||s.isCollapsed||!s.anchorNode||!s.focusNode)return;if($('postText').contains(s.anchorNode)&&$('postText').contains(s.focusNode)){const text=s.toString().trim();if(text&&text.length<=500)selectedReference={id:dataset.records[index].id,text};}});
 function fail(error){notice(error.message||'No se pudo completar la operación.');}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&dataset){collectDraft();persist();}});
-window.addEventListener('pagehide',()=>{if(dataset){collectDraft();persist();}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&dataset&&persistTimer){collectDraft();persist();}});
+window.addEventListener('pagehide',()=>{if(dataset&&persistTimer){collectDraft();persist();}});
 window.addEventListener('beforeunload',e=>{if(persistTimer){collectDraft();persist();e.preventDefault();e.returnValue='';}});
 async function start(){
- try{db=await dbOpen();const meta=await dbGet('meta','last');if(meta){dataset=await dbGet('datasets',meta.id);if(dataset){dataset.records=C.normalize(dataset.records.map(r=>r.raw)).records;session=C.fileLabels(dataset,meta.annotator||'');$('labelerName').value=session.labelerName||(session.annotator!=='individual'?session.annotator:'');index=Math.min(Math.max(Number(meta.index)||0,0),dataset.records.length-1);render();$('saveStatus').textContent='Avance recuperado de este navegador';}}}
+ try{db=await LabelStorage.open();try{legacyDb=await LabelStorage.open('piura-etiquetador-v1');}catch{}const currentMeta=await LabelStorage.get(db,'meta','last'),meta=currentMeta||(legacyDb?await LabelStorage.get(legacyDb,'meta','last'):null);if(meta){dataset=await storedDataset(meta.id);if(dataset){dataset.records=C.normalize(dataset.records.map(r=>r.raw)).records;revisions.set(dataset.id,dataset._storageRevision||0);session=C.fileLabels(dataset,meta.annotator||'');$('labelerName').value=session.labelerName||(session.annotator!=='individual'?session.annotator:'');index=Math.min(Math.max(Number(meta.index)||0,0),dataset.records.length-1);render();if(!currentMeta)await persist();$('saveStatus').textContent='Avance recuperado de este navegador';}}}
  catch{db=null;notice('El guardado del navegador no está disponible. Exporta en Excel o CSV antes de cerrar.');}
 }
-start().catch(fail);
+const ready=start().catch(fail);
 })();

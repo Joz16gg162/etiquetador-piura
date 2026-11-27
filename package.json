@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node tests/core.test.cjs && node tests/excel.test.cjs && node tests/storage.test.cjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.8"
+  }
+}

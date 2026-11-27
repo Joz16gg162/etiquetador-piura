@@ -1,0 +1,32 @@
+require('fake-indexeddb/auto');
+const assert=require('node:assert/strict'),S=require('../storage.js');
+const meta={id:'lote-12',index:0,annotator:'individual',protocol:'auxilio_v1'};
+const initial={id:meta.id,records:[],sessions:[{annotator:'individual',annotations:[{id:'1',status:'completa'}]}]};
+const clean={...initial,sessions:[{annotator:'individual',annotations:[]}]};
+async function seedLegacy(db,value){await new Promise((resolve,reject)=>{const t=db.transaction(['datasets','meta'],'readwrite');t.objectStore('datasets').put(value);t.objectStore('meta').put(meta,'last');t.oncomplete=resolve;t.onerror=()=>reject(t.error);});}
+(async()=>{
+ const db=await S.open(),other=await S.open(),legacy=await S.open('piura-etiquetador-v1');
+ await seedLegacy(legacy,initial);
+ assert.equal(await S.get(db,'datasets',meta.id),undefined);
+ let revision=await S.write(db,initial,meta,0);assert.equal(revision,1);
+ const stale=await S.get(other,'datasets',meta.id);
+ revision=await S.write(db,clean,meta,revision);
+ assert.equal(revision,2);
+ await assert.rejects(()=>S.write(other,stale,{...meta,index:7},stale._storageRevision),e=>e.code==='STALE_TAB');
+ assert.equal((await S.get(db,'datasets',meta.id)).sessions[0].annotations.length,0);
+ assert.equal((await S.get(db,'meta','last')).index,0);
+ console.log('OK Una pestaña anterior no puede sobrescribir el reinicio ni cambiar la posición guardada');
+ await seedLegacy(legacy,initial);
+ assert.equal((await S.get(db,'datasets',meta.id)).sessions[0].annotations.length,0);
+ assert.equal((await S.get(legacy,'datasets',meta.id)).sessions[0].annotations.length,1);
+ console.log('OK Pestañas de versiones antiguas quedan aisladas y sus datos se conservan para migración');
+ const results=await Promise.allSettled([S.write(db,clean,meta,2),S.write(other,initial,meta,2)]);
+ assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+ assert.equal(results.filter(r=>r.status==='rejected'&&r.reason.code==='STALE_TAB').length,1);
+ assert.equal((await S.get(db,'datasets',meta.id)).sessions[0].annotations.length,0);
+ console.log('OK Dos escrituras concurrentes sobre la misma revisión no se pisan');
+ const latest=await S.get(db,'datasets',meta.id),r=await S.write(db,{...latest,name:'Mismo archivo'},meta,latest._storageRevision);
+ assert.equal(r,4);assert.equal((await S.get(other,'datasets',meta.id)).name,'Mismo archivo');
+ console.log('OK Una pestaña al día sigue guardando normalmente y conserva el avance entre conexiones');
+ db.close();other.close();legacy.close();
+})().catch(e=>{console.error(e);process.exitCode=1;});
