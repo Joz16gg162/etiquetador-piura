@@ -86,15 +86,25 @@ async function acceptImport(parsed,name){
  if(dataset){collectDraft();await persist();}
  const id=await C.fingerprint(parsed.records);let stored=db?await dbGet('datasets',id):null;
  if(stored&&JSON.stringify(stored.records.map(r=>r.raw))!==JSON.stringify(parsed.records.map(r=>r.raw)))throw Error('Este archivo coincide con un identificador local de otro contenido. Conserva los CSV y usa otro navegador para importarlos por separado.');
- const next=stored||{id,name,records:parsed.records,sessions:[]};next.records=parsed.records;
+ let next=stored||{id,name,records:parsed.records,sessions:[]},restarted=false,resumed=false;
+ if(stored&&!parsed.imported.length&&stored.sessions.some(s=>s.annotations.length||s.labelerName)){
+  const mode=await chooseImportMode();if(mode==='cancel')return false;
+  if(mode==='fresh'){
+   next={...stored,name,sessions:[],activeAnnotator:'',annotationHistory:[...(stored.annotationHistory||[]),{savedAt:new Date().toISOString(),sessions:clone(stored.sessions),activeAnnotator:stored.activeAnnotator||''}]};restarted=true;
+  }else resumed=true;
+ }
+ next.records=parsed.records;
  if(parsed.imported.length){
   const conflict=parsed.imported.some(item=>{const s=next.sessions.find(s=>s.annotator===item.annotator&&s.protocol===item.protocol),a=s?.annotations.find(a=>a.id===item.annotation.id);return a&&JSON.stringify(a)!==JSON.stringify(item.annotation);});
   if(conflict&&!confirm('El archivo contiene etiquetas distintas de las guardadas para este archivo. ¿Reemplazar las etiquetas locales por las del CSV? Cancela para conservar las actuales.'))return false;
   for(const item of parsed.imported){let s=next.sessions.find(s=>s.annotator===item.annotator&&s.protocol===item.protocol);if(!s){s={annotator:item.annotator,protocol:item.protocol,annotations:[]};next.sessions.push(s);}const i=s.annotations.findIndex(a=>a.id===item.annotation.id);if(i<0)s.annotations.push(item.annotation);else s.annotations[i]=item.annotation;}
  }
  dataset=next;index=0;session=null;$('search').value='';$('statusFilter').value='all';
- session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');session.labelerName=parsed.labelerName||session.labelerName||(session.annotator!=='individual'?session.annotator:$('labelerName').value.trim());$('labelerName').value=session.labelerName||'';
- render();await persist();notice(`${dataset.records.length} publicaciones cargadas.${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del archivo.':''}`,true);return true;
+ session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');session.labelerName=restarted?'':parsed.labelerName||session.labelerName||(session.annotator!=='individual'?session.annotator:$('labelerName').value.trim());$('labelerName').value=session.labelerName||'';
+ render();await persist();notice(`${dataset.records.length} publicaciones cargadas.${restarted?' Etiquetado iniciado desde cero.':resumed?' Se recuperó el avance guardado en este navegador.':''}${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del archivo.':''}`,true);return true;
+}
+async function chooseImportMode(){
+ const dialog=$('importModeDialog');dialog.returnValue='cancel';const closed=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(['fresh','resume'].includes(dialog.returnValue)?dialog.returnValue:'cancel'),{once:true}));dialog.showModal();return closed;
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]/gi,'_').slice(0,60);
