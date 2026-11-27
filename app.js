@@ -14,7 +14,7 @@ function persist(){
  const snapshot=clone(dataset),meta={id:dataset.id,index,annotator:session?.annotator||'',protocol:PROTOCOL};
  $('saveStatus').textContent='Guardando en este navegador…';
  if(!db){$('saveStatus').textContent='Sin guardado local: exporta tu trabajo';return Promise.resolve();}
- saveChain=saveChain.catch(()=>{}).then(()=>dbWrite(snapshot,meta)).then(()=>{$('saveStatus').textContent='Guardado en este navegador';}).catch(()=>{$('saveStatus').textContent='No se pudo guardar: exporta tu trabajo';notice('No se pudo guardar el avance en el navegador. Exporta tu CSV antes de cerrar.');});return saveChain;
+ saveChain=saveChain.catch(()=>{}).then(()=>dbWrite(snapshot,meta)).then(()=>{$('saveStatus').textContent='Guardado en este navegador';}).catch(()=>{$('saveStatus').textContent='No se pudo guardar: exporta tu trabajo';notice('No se pudo guardar el avance en el navegador. Exporta en Excel o CSV antes de cerrar.');});return saveChain;
 }
 function annotation(){return session?.annotations.find(a=>a.id===dataset.records[index]?.id)||null;}
 function upsert(a){const i=session.annotations.findIndex(x=>x.id===a.id);if(i<0)session.annotations.push(a);else session.annotations[i]=a;}
@@ -35,7 +35,7 @@ function collectDraft(){
 function scheduleSave(){collectDraft();clearTimeout(persistTimer);$('saveStatus').textContent='Cambios pendientes de guardar…';persistTimer=setTimeout(()=>persist(),350);}
 function updateProgress(){if(!dataset)return;const values=session?.annotations||[],complete=values.filter(a=>a.status==='completa').length,doubts=values.filter(a=>a.status==='duda').length;const drafts=values.filter(a=>a.status==='borrador').length;
  $('progress').max=dataset.records.length;$('progress').value=complete;$('progressText').textContent=`${complete} de ${dataset.records.length} completadas · ${dataset.records.length-complete-doubts} pendientes · ${doubts} con duda`;$('progressPercent').textContent=(dataset.records.length?100*complete/dataset.records.length:0).toLocaleString('es-PE',{maximumFractionDigits:1})+' %';
- $('exportCSV').disabled=!session;
+ $('exportCSV').disabled=!session;$('exportExcel').disabled=!session;
 }
 function matching(){const labels=new Map((session?.annotations||[]).map(a=>[a.id,a]));const term=$('search').value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),filter=$('statusFilter').value;return dataset.records.flatMap((r,i)=>{const a=labels.get(r.id);const status=a?.status||'pendiente';const normalized=(r.id+' '+r.text).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return normalized.includes(term)&&(filter==='all'||filter===status||(filter==='pending'&&['pendiente','borrador'].includes(status)))?[i]:[];});}
 function refreshNavigation(){const ids=matching();$('jump').replaceChildren(...ids.map(i=>{const o=document.createElement('option');o.value=String(i);o.textContent=`${i+1} · ${dataset.records[i].id}`;return o;}));if(!ids.includes(index)&&ids.length)index=ids[0];$('jump').value=String(index);$('emptyFilter').hidden=!!ids.length;$('editor').hidden=!ids.length;return ids;}
@@ -94,11 +94,24 @@ async function acceptImport(parsed,name){
  }
  dataset=next;index=0;session=null;$('search').value='';$('statusFilter').value='all';
  session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');session.labelerName=parsed.labelerName||session.labelerName||(session.annotator!=='individual'?session.annotator:$('labelerName').value.trim());$('labelerName').value=session.labelerName||'';
- render();await persist();notice(`${dataset.records.length} publicaciones cargadas.${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del CSV.':''}`,true);return true;
+ render();await persist();notice(`${dataset.records.length} publicaciones cargadas.${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del archivo.':''}`,true);return true;
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]/gi,'_').slice(0,60);
-async function exportCSV(){if(!session)return;const name=$('labelerName').value.trim();if(!name){notice('Escribe el nombre del etiquetador antes de exportar.');$('labelerName').focus();return;}session.labelerName=name;collectDraft();await persist();download(`etiquetas_${slug(dataset.name.replace(/\.csv$/i,'').replace(/^etiquetas_/i,''))}.csv`,C.csvExport(dataset,session,name),'text/csv;charset=utf-8');notice('CSV descargado. Incluye tus publicaciones y etiquetas. Puedes importarlo para continuar en otro ordenador.',true);}
+async function exportFile(format){if(!session)return;const name=$('labelerName').value.trim();if(!name){notice('Escribe el nombre del etiquetador antes de exportar.');$('labelerName').focus();return;}session.labelerName=name;collectDraft();await persist();const base=`etiquetas_${slug(dataset.name.replace(/\.(csv|xlsx|xls)$/i,'').replace(/^etiquetas_/i,''))}`;if(format==='xlsx')download(base+'.xlsx',LabelExcel.write(C.exportTable(dataset,session,name)),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');else download(base+'.csv',C.csvExport(dataset,session,name),'text/csv;charset=utf-8');notice(`${format==='xlsx'?'Excel':'CSV'} descargado. Incluye tus publicaciones y etiquetas. Puedes importarlo para continuar en otro ordenador.`,true);}
+async function chooseSheet(book){
+ const names=book.SheetNames.filter(name=>book.Sheets[name]?.['!ref']);if(!names.length)throw Error('El Excel no contiene hojas con datos.');if(names.length===1)return names[0];
+ $('sheetChoice').replaceChildren(...names.map(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;return o;}));
+ const dialog=$('sheetDialog');dialog.returnValue='';const closed=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(dialog.returnValue==='import'?$('sheetChoice').value:null),{once:true}));dialog.showModal();return closed;
+}
+async function importFile(f){
+ if(f.size>20*1024*1024)throw Error('El archivo supera 20 MB. Divídelo en lotes para etiquetar con comodidad.');
+ const buffer=await f.arrayBuffer();let text;
+ if(/\.(xlsx|xls)$/i.test(f.name)){const book=LabelExcel.read(buffer),sheet=await chooseSheet(book);if(!sheet)return;text=LabelExcel.rows(book,sheet);}
+ else if(/\.csv$/i.test(f.name)){try{text=new TextDecoder('utf-8',{fatal:true}).decode(buffer);}catch{throw Error('Guarda el CSV con codificación UTF-8 y vuelve a importarlo.');}}
+ else throw Error('Elige un archivo CSV, Excel .xlsx o Excel .xls.');
+ await acceptImport(C.normalize(C.csv(text)),f.name);
+}
 function template(){download('plantilla_publicaciones.csv','\uFEFFid,texto,fecha,url,imagenes,videos,miniaturas\r\n"EJEMPLO-001","Texto de la publicación","2023-03-10T15:00:00-05:00","","https://ejemplo.org/foto1.jpg|https://ejemplo.org/foto2.jpg","",""\r\n','text/csv;charset=utf-8');}
 async function saveAndAdvance(){
  if(!session)return;const a=readForm(),r=dataset.records[index];const doubt=a.confidence==='con_duda';const e=C.errors(a,r,doubt);if(e.length){$('formErrors').textContent=e.join('\n');$('formErrors').hidden=false;$('formErrors').scrollIntoView({block:'center',behavior:'smooth'});return;}
@@ -113,10 +126,10 @@ $('previous').addEventListener('click',()=>move(-1).catch(fail));$('next').addEv
 $('addLocation').addEventListener('click',()=>{addLocation();scheduleSave();});
 for(const id of ['statusFilter','search'])$(id).addEventListener(id==='search'?'input':'change',async()=>{collectDraft();render();await persist();});
 $('jump').addEventListener('change',async()=>{collectDraft();index=Number($('jump').value);render();await persist();});
-$('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{if(!f)return;if(f.size>20*1024*1024)throw Error('El CSV supera 20 MB. Divídelo en lotes para etiquetar con comodidad.');let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(await f.arrayBuffer());}catch{throw Error('Guarda el CSV con codificación UTF-8 y vuelve a importarlo.');}await acceptImport(C.normalize(C.csv(text)),f.name);}catch(err){fail(err);}finally{e.target.value='';}});
+$('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{if(f)await importFile(f);}catch(err){fail(err);}finally{e.target.value='';}});
 $('demoButton').addEventListener('click',()=>acceptImport(C.normalize(C.csv(window.PIURA_DEMO_CSV)),'Ejemplos ficticios · 8 publicaciones').catch(fail));
 $('labelerName').addEventListener('input',()=>{if(session){session.labelerName=$('labelerName').value.trim();persist();}});
-$('templateButton').addEventListener('click',template);$('exportCSV').addEventListener('click',()=>exportCSV().catch(fail));
+$('templateButton').addEventListener('click',template);$('exportCSV').addEventListener('click',()=>exportFile('csv').catch(fail));$('exportExcel').addEventListener('click',()=>exportFile('xlsx').catch(fail));
 $('closeImage').addEventListener('click',()=>{$('imageDialog').close();$('largeImage').removeAttribute('src');});
 document.addEventListener('selectionchange',()=>{const s=window.getSelection();if(!dataset||!s||s.isCollapsed||!s.anchorNode||!s.focusNode)return;if($('postText').contains(s.anchorNode)&&$('postText').contains(s.focusNode)){const text=s.toString().trim();if(text&&text.length<=500)selectedReference={id:dataset.records[index].id,text};}});
 function fail(error){notice(error.message||'No se pudo completar la operación.');}
@@ -125,7 +138,7 @@ window.addEventListener('pagehide',()=>{if(dataset){collectDraft();persist();}})
 window.addEventListener('beforeunload',e=>{if(persistTimer){collectDraft();persist();e.preventDefault();e.returnValue='';}});
 async function start(){
  try{db=await dbOpen();const meta=await dbGet('meta','last');if(meta){dataset=await dbGet('datasets',meta.id);if(dataset){dataset.records=C.normalize(dataset.records.map(r=>r.raw)).records;session=C.fileLabels(dataset,meta.annotator||'');$('labelerName').value=session.labelerName||(session.annotator!=='individual'?session.annotator:'');index=Math.min(Math.max(Number(meta.index)||0,0),dataset.records.length-1);render();$('saveStatus').textContent='Avance recuperado de este navegador';}}}
- catch{db=null;notice('El guardado del navegador no está disponible. Exporta tu CSV antes de cerrar.');}
+ catch{db=null;notice('El guardado del navegador no está disponible. Exporta en Excel o CSV antes de cerrar.');}
 }
 start().catch(fail);
 })();

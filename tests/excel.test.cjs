@@ -1,0 +1,19 @@
+const assert=require('node:assert/strict');
+const C=require('../core.js'),E=require('../excel.js'),X=require('../vendor/xlsx.full.min.js');
+let checks=0;function test(name,fn){fn();checks++;console.log('OK '+name);}
+const parse=(book,name=book.SheetNames[0])=>C.normalize(C.csv(E.rows(book,name)));
+const book=table=>{const b=X.utils.book_new();X.utils.book_append_sheet(b,X.utils.aoa_to_sheet(table),'Datos');return b;};
+const source=book([['id','texto','imagenes','latitud','extra'],['1639528642991538176','Inundación, "Piura"\nSegunda línea','https://example.org/foto.jpg',-5.12345,'=SUM(A1:A2)'],['0002',"'Texto original",'',0,'+otra cadena']]);
+const data=parse(source),a=C.blank(data.records[0].id);Object.assign(a,{status:'duda',confidence:'con_duda',notes:'Comprobar el lugar y la fecha.'});
+const session={annotator:'individual',protocol:'auxilio_v1',annotations:[a],labelerName:'María, "Pérez"'};
+test('Lee Excel con ID largo de texto, ceros iniciales, saltos y decimales',()=>{assert.equal(data.records[0].id,'1639528642991538176');assert.equal(data.records[1].id,'0002');assert.equal(data.records[0].raw.latitud,'-5.12345');assert.equal(data.records[1].raw.latitud,'0');assert.equal(data.records[0].text,'Inundación, "Piura"\nSegunda línea');});
+test('Excel exportado conserva ID y texto como celdas de texto sin fórmulas',()=>{const b=E.read(E.write(C.exportTable(data,session)));const s=b.Sheets.Publicaciones;assert.equal(s.A2.t,'s');assert.equal(s.A2.v,data.records[0].id);assert.equal(s.E2.t,'s');assert.equal(s.E2.f,undefined);assert.equal(s.E2.v,'=SUM(A1:A2)');assert.ok(s['!autofilter']);});
+test('Excel se reimporta con nombre, dudas, medios y columnas originales exactos',()=>{const result=parse(E.read(E.write(C.exportTable(data,session))));assert.deepEqual(result.records,data.records);assert.equal(result.labelerName,session.labelerName);assert.deepEqual(result.imported[0].annotation,a);const rows=C.csv(E.rows(E.read(E.write(C.exportTable(data,session))),'Publicaciones'));assert.equal(rows[1].etiquetador,'');});
+test('CSV a Excel y Excel a CSV no acumulan apóstrofos de protección',()=>{const csv=C.normalize(C.csv(C.csvExport(data,session)));const excel=parse(E.read(E.write(C.exportTable(csv,session))));const result=C.normalize(C.csv(C.csvExport(excel,session)));assert.deepEqual(result.records,data.records);assert.deepEqual(result.imported[0].annotation,a);});
+test('Excel sin anotaciones conserva el nombre para continuar',()=>{const result=parse(E.read(E.write(C.exportTable(data,{...session,annotations:[]}))));assert.equal(result.labelerName,session.labelerName);assert.equal(result.imported.length,0);});
+test('Rechaza IDs largos numéricos que Excel pudo haber redondeado',()=>{assert.throws(()=>parse(book([['id','texto'],[1639528642991538176,'Un post']])),/ID largo/);});
+test('Lee fechas Excel como hora de Perú y admite XLS antiguo',()=>{const b=book([['id','texto','fecha'],['1','Contenido',new Date(2023,2,10,10,0,0)]]);assert.equal(parse(E.read(X.write(b,{type:'array',bookType:'xlsx'}))).records[0].date,'2023-03-10T10:00:00-05:00');assert.equal(parse(E.read(X.write(source,{type:'array',bookType:'biff8'}))).records[0].id,data.records[0].id);});
+test('Cada hoja se puede seleccionar sin mezclar datasets',()=>{const b=book([['id','texto'],['1','Primera']]);X.utils.book_append_sheet(b,X.utils.aoa_to_sheet([['id','texto'],['2','Segunda']]),'Otra hoja');assert.equal(parse(b,'Otra hoja').records[0].id,'2');});
+test('Errores de hoja no pasan como valores silenciosamente',()=>{const b=book([['id','texto'],['1','Contenido']]);b.Sheets.Datos.B2={t:'e',v:7};assert.throws(()=>parse(b),/error/);assert.throws(()=>parse(book([['id','id'],['1','Uno']])));assert.throws(()=>E.rows(book([]),'Datos'),/vacía/);});
+test('No trunca celdas que exceden el límite de Excel',()=>assert.throws(()=>E.write([['texto'],['x'.repeat(32768)]]),/32 767/));
+console.log(`${checks} comprobaciones Excel correctas.`);

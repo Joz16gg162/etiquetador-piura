@@ -103,13 +103,17 @@ function fileLabels(dataset,preferred=''){
 }
 function blank(id){return {id,status:'borrador',relevant:'',attention:'',flood:'',noReference:false,locations:[],confidence:'segura',notes:'',videoEvidence:'no_revisado',videoTime:'',updatedAt:''};}
 function effective(a){const b=JSON.parse(JSON.stringify(a));if(b.relevant==='no'){b.attention='no';b.flood='no';b.noReference=true;b.locations=[];}else if(b.noReference)b.locations=[];else b.locations=b.locations.map(l=>{if(l.type==='no_resuelta')return {...l,resolved:'',district:'',lat:'',lng:'',source:''};if(l.type==='area')return {...l,lat:'',lng:'',source:''};return l;});return b;}
-function csvExport(dataset,session,labelerName=session.labelerName||session.annotator){
+function exportTable(dataset,session,labelerName=session.labelerName||session.annotator,version='2'){
  const headers=[...new Set(dataset.records.flatMap(r=>Object.keys(r.raw)))];
  const extra=['etiquetador','_etq_export_version','_etq_anotador','_etq_protocolo','_etq_estado','_etq_relevante','_etq_auxilio_personas','_etq_inundacion_desborde','_etq_ubicaciones_json','_etq_confianza','_etq_observaciones','_etq_fecha','_etq_anotacion_json','_etq_contiene_imagen','_etq_contiene_video','_etq_nombre_etiquetador'];
- const annotations=new Map(session.annotations.map(a=>[a.id,a]));const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const rows=dataset.records.map(r=>{const a=annotations.get(r.id);return [...headers.map(h=>r.raw[h]||''),a?labelerName:'','1',session.annotator,session.protocol,a?.status||'pendiente',a?.relevant||'',a?.attention||'',a?.flood||'',a?JSON.stringify(a.locations):'',a?.confidence||'',a?.notes||'',a?.updatedAt||'',a?JSON.stringify(a):'',r.hasImage?'si':'no',r.hasVideo?'si':'no',labelerName].map(encodeCell).map(quote).join(',');});
- return '\uFEFF'+[headers.concat(extra).map(quote).join(','),...rows].join('\r\n');
+ const annotations=new Map(session.annotations.map(a=>[a.id,a]));
+ const rows=dataset.records.map(r=>{const a=annotations.get(r.id);return [...headers.map(h=>r.raw[h]||''),a?labelerName:'',version,session.annotator,session.protocol,a?.status||'pendiente',a?.relevant||'',a?.attention||'',a?.flood||'',a?JSON.stringify(a.locations):'',a?.confidence||'',a?.notes||'',a?.updatedAt||'',a?JSON.stringify(a):'',r.hasImage?'si':'no',r.hasVideo?'si':'no',labelerName];});
+ return [headers.concat(extra),...rows];
+}
+function csvExport(dataset,session,labelerName=session.labelerName||session.annotator){
+ const [headers,...rows]=exportTable(dataset,session,labelerName,'1');const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ return '\uFEFF'+[headers.map(quote).join(','),...rows.map(row=>row.map(encodeCell).map(quote).join(','))].join('\r\n');
 }
 async function fingerprint(records){const value=JSON.stringify(records.map(r=>r.raw));if(globalThis.crypto?.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}let a=2166136261,b=5381;for(let i=0;i<value.length;i++){a=Math.imul(a^value.charCodeAt(i),16777619);b=Math.imul(b,33)^value.charCodeAt(i);}return `portable-${a>>>0}-${b>>>0}-${value.length}`;}
-return {VERSION,protocols,csv,normalize,safeURL,mapSearchURLs,coordinates,fileLabels,blank,effective,errors,csvExport,fingerprint,validateAnnotationShape};
+return {VERSION,protocols,csv,normalize,safeURL,mapSearchURLs,coordinates,fileLabels,blank,effective,errors,csvExport,exportTable,fingerprint,validateAnnotationShape};
 });

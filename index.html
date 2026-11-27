@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Importa un CSV, etiqueta publicaciones y exporta tu trabajo."><meta name="referrer" content="no-referrer">
-<title>Piura · Etiquetado manual</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=1.4"><link rel="stylesheet" href="layout.css?v=1.4"><script src="core.js?v=1.4" defer></script><script src="demo.js" defer></script><script src="app.js?v=1.4" defer></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Importa CSV o Excel, etiqueta publicaciones y exporta tu trabajo."><meta name="referrer" content="no-referrer">
+<title>Piura · Etiquetado manual</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=1.5"><link rel="stylesheet" href="layout.css?v=1.5"><script src="core.js?v=1.5" defer></script><script src="vendor/xlsx.full.min.js" defer></script><script src="excel.js?v=1.5" defer></script><script src="demo.js" defer></script><script src="app.js?v=1.5" defer></script>
 </head><body><main>
 <header class="page-header"><p class="eyebrow">GRAN PIURA</p><h1>Etiquetado manual</h1></header>
 <section class="file-panel" aria-labelledby="fileHeading">
- <div class="panel-heading"><h2 id="fileHeading">Archivo</h2><div class="file-actions"><label class="button primary" for="csvFile">Importar CSV</label><input class="sr-only" id="csvFile" type="file" accept=".csv,text/csv"><button id="exportCSV" disabled>Exportar CSV</button></div></div>
+ <div class="panel-heading"><h2 id="fileHeading">Archivo</h2><div class="file-actions"><label class="button primary" for="csvFile">Importar CSV o Excel</label><input class="sr-only" id="csvFile" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"><button id="exportExcel" disabled>Exportar Excel</button><button id="exportCSV" disabled>Exportar CSV</button></div></div>
  <div class="file-summary"><span class="field-label">Archivo cargado</span><p id="datasetTitle">Ningún archivo seleccionado</p><label class="labeler-field">Nombre del etiquetador<input id="labelerName" type="text" maxlength="120" autocomplete="name" placeholder="Escribe tu nombre"></label></div>
- <div class="usage"><h3>Uso</h3><ul><li>Importa el CSV que vas a etiquetar.</li><li>Revisa cada publicación, completa sus etiquetas y pulsa «Guardar y siguiente».</li><li>Exporta el CSV al terminar. Puedes importarlo después para continuar.</li></ul></div>
+ <div class="usage"><h3>Uso</h3><ul><li>Importa el CSV o Excel que vas a etiquetar.</li><li>Revisa cada publicación, completa sus etiquetas y pulsa «Guardar y siguiente».</li><li>Exporta en Excel o CSV al terminar. Puedes importarlo después para continuar.</li></ul></div>
  <div id="welcome" class="start-options"><button id="demoButton">Probar con ejemplos</button><button id="templateButton">Descargar plantilla CSV</button></div>
 </section>
 <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
@@ -37,5 +37,5 @@
   </div>
  </div>
 </section>
-<footer>El archivo y las etiquetas se guardan en este navegador. Exporta tu CSV para conservarlos.</footer>
-</main><dialog id="imageDialog" aria-label="Imagen ampliada"><button id="closeImage">Cerrar imagen</button><img id="largeImage" alt="Imagen ampliada de la publicación"><p id="imageCaption"></p></dialog></body></html>
+<footer>El archivo y las etiquetas se guardan en este navegador. Exporta en Excel o CSV para conservarlos.</footer>
+</main><dialog id="sheetDialog" aria-labelledby="sheetHeading"><form method="dialog"><h2 id="sheetHeading">Elige la hoja con publicaciones</h2><label>Hoja del Excel<select id="sheetChoice"></select></label><div class="sheet-actions"><button value="cancel">Cancelar</button><button value="import" class="primary">Importar hoja</button></div></form></dialog><dialog id="imageDialog" aria-label="Imagen ampliada"><button id="closeImage">Cerrar imagen</button><img id="largeImage" alt="Imagen ampliada de la publicación"><p id="imageCaption"></p></dialog></body></html>
