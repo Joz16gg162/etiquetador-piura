@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Importa CSV o Excel, etiqueta publicaciones y exporta tu trabajo."><meta name="referrer" content="no-referrer">
-<title>Etiquetado manual</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=1.11"><link rel="stylesheet" href="layout.css?v=1.11"><link rel="stylesheet" href="workspace.css?v=1.11"><script src="core.js?v=1.11" defer></script><script src="vendor/xlsx.full.min.js" defer></script><script src="excel.js?v=1.11" defer></script><script src="demo.js" defer></script><script src="storage.js?v=1.11" defer></script><script src="app.js?v=1.11" defer></script>
+<title>Etiquetado manual</title><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=1.12"><link rel="stylesheet" href="layout.css?v=1.12"><link rel="stylesheet" href="workspace.css?v=1.12"><script src="core.js?v=1.12" defer></script><script src="vendor/xlsx.full.min.js" defer></script><script src="excel.js?v=1.12" defer></script><script src="demo.js" defer></script><script src="storage.js?v=1.12" defer></script><script src="app.js?v=1.12" defer></script>
 </head><body><main>
 <header class="page-header"><h1>Etiquetado manual</h1></header>
 <section class="file-panel" aria-labelledby="fileHeading">
@@ -14,7 +14,7 @@
 <section id="workspace" class="work-area" hidden aria-label="Etiquetado del archivo">
  <header class="work-header"><p id="currentPost" class="current-post" aria-live="polite" aria-atomic="true"><span>Publicación</span><span class="position-value"><strong id="currentPostNumber">1</strong> de <span id="currentPostTotal">1</span></span></p><div class="progress-block"><div class="progress-heading"><h2>Avance del archivo</h2><strong id="progressPercent">0 %</strong></div><progress id="progress" max="1" value="0" aria-label="Publicaciones completadas del archivo"></progress><div class="progress-summary"><p id="progressText"></p><span id="saveStatus" role="status">Sin cambios</span></div></div></header>
  <div class="work-content">
-  <nav class="navigation" aria-label="Elegir publicación"><label>Mostrar<select id="statusFilter"><option value="all">Todas</option><option value="pending">Pendientes y borradores</option><option value="duda">Con duda</option><option value="completa">Completadas</option></select></label><label>Buscar texto o ID<input id="search" type="search" placeholder="Escribe una palabra o un ID"></label><label>Ir a publicación<select id="jump"></select></label></nav>
+  <nav class="navigation" aria-label="Elegir publicación"><label>Mostrar<select id="statusFilter"><option value="all">Todas</option><option value="pending">Pendientes y borradores</option><option value="duda">Con duda</option><option value="completa">Completadas</option></select></label><label>Ir a publicación<select id="jump"></select></label></nav>
   <div id="emptyFilter" class="empty" hidden>No hay publicaciones con estos filtros.</div>
   <div id="editor">
    <article class="publication-panel" aria-labelledby="publicationHeading">

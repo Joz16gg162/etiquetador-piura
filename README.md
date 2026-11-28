@@ -18,6 +18,8 @@ En pantallas de al menos 1100 px de ancho y 600 px de alto, el archivo y el avan
 
 La vista usa superficies blancas y separadores suaves. La cabecera de **Publicación** tiene un tono azul y la de **Etiquetas** un tono verde para distinguir ambas áreas; el avance, las respuestas seleccionadas y guardar conservan el verde. Las imágenes y videos aparecen debajo del texto, a todo el ancho del panel de publicación y con una altura máxima mayor; se mantiene la ampliación al pulsar la imagen. Las respuestas Sí/No mantienen controles de radio nativos, navegación por teclado, foco visible y una marca de selección además del color. La ayuda de Confianza aparece al elegir **Con duda**; las observaciones siguen siendo obligatorias en ese caso.
 
+La navegación muestra solo **Mostrar** (estado de etiquetado) e **Ir a publicación**; se retiró el buscador de texto o ID. Los márgenes separan Archivo, Avance y el área de trabajo. Los paneles tienen mayor separación, y Ubicación, Confianza/Observaciones y la evidencia de video conservan espacios propios dentro del formulario.
+
 **Borrar etiquetas** permite reiniciar el archivo cargado sin volver a importarlo. Pide confirmación; cancelar conserva el trabajo. Confirmar vacía el etiquetado activo y el nombre, vuelve a la primera publicación, limpia los filtros y guarda un avance de 0 completadas. Las publicaciones originales se conservan. Las sesiones anteriores quedan en el historial local interno, separadas del etiquetado y de la exportación nuevos. La protección de escrituras también impide que una pestaña anterior deshaga este reinicio.
 
 ## Archivos y guardado

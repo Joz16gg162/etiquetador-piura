@@ -20,7 +20,7 @@ function persist(){
   const revision=await LabelStorage.write(db,snapshot,meta,expected);revisions.set(snapshot.id,revision);if(dataset?.id===snapshot.id)dataset._storageRevision=revision;
   $('saveStatus').textContent='Guardado en este navegador';return true;
  }).catch(error=>{
-  if(error.code==='STALE_TAB'){storageConflict=true;$('saveStatus').textContent='Pestaña desactualizada';$('formFields').disabled=true;for(const id of ['saveNext','previous','next','jump','statusFilter','search','labelerName'])$(id).disabled=true;notice(error.message);}
+  if(error.code==='STALE_TAB'){storageConflict=true;$('saveStatus').textContent='Pestaña desactualizada';$('formFields').disabled=true;for(const id of ['saveNext','previous','next','jump','statusFilter','labelerName'])$(id).disabled=true;notice(error.message);}
   else{$('saveStatus').textContent='No se pudo guardar: exporta tu trabajo';notice('No se pudo guardar el avance en el navegador. Exporta en Excel o CSV antes de cerrar.');}
   return false;
  });return saveChain;
@@ -46,7 +46,7 @@ function updateProgress(){if(!dataset)return;const values=session?.annotations||
  $('progress').max=dataset.records.length;$('progress').value=complete;$('progressText').textContent=`${complete} de ${dataset.records.length} completadas · ${dataset.records.length-complete-doubts} pendientes · ${doubts} con duda`;$('progressPercent').textContent=(dataset.records.length?100*complete/dataset.records.length:0).toLocaleString('es-PE',{maximumFractionDigits:1})+' %';
  $('exportCSV').disabled=!session;$('exportExcel').disabled=!session;$('clearLabels').disabled=!session;$('exportMenu').hidden=!session;
 }
-function matching(){const labels=new Map((session?.annotations||[]).map(a=>[a.id,a]));const term=$('search').value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),filter=$('statusFilter').value;return dataset.records.flatMap((r,i)=>{const a=labels.get(r.id);const status=a?.status||'pendiente';const normalized=(r.id+' '+r.text).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return normalized.includes(term)&&(filter==='all'||filter===status||(filter==='pending'&&['pendiente','borrador'].includes(status)))?[i]:[];});}
+function matching(){const labels=new Map((session?.annotations||[]).map(a=>[a.id,a])),filter=$('statusFilter').value;return dataset.records.flatMap((r,i)=>{const status=labels.get(r.id)?.status||'pendiente';return filter==='all'||filter===status||(filter==='pending'&&['pendiente','borrador'].includes(status))?[i]:[];});}
 function refreshNavigation(){const ids=matching();$('jump').replaceChildren(...ids.map(i=>{const o=document.createElement('option');o.value=String(i);o.textContent=`${i+1} · ${dataset.records[i].id}`;return o;}));if(!ids.includes(index)&&ids.length)index=ids[0];$('jump').value=String(index);$('emptyFilter').hidden=!!ids.length;$('editor').hidden=!ids.length;return ids;}
 function inputField(label,key,value='',type='text'){const l=document.createElement('label');l.textContent=label;const input=document.createElement('input');input.type=type;input.value=value;input.dataset.field=key;if(['lat','lng'].includes(key))input.inputMode='decimal';l.append(input);return l;}
 function addLocation(value={}){
@@ -109,7 +109,7 @@ async function acceptImport(parsed,name){
   if(conflict&&!confirm('El archivo contiene etiquetas distintas de las guardadas para este archivo. ¿Reemplazar las etiquetas locales por las del CSV? Cancela para conservar las actuales.'))return false;
   for(const item of parsed.imported){let s=next.sessions.find(s=>s.annotator===item.annotator&&s.protocol===item.protocol);if(!s){s={annotator:item.annotator,protocol:item.protocol,annotations:[]};next.sessions.push(s);}const i=s.annotations.findIndex(a=>a.id===item.annotation.id);if(i<0)s.annotations.push(item.annotation);else s.annotations[i]=item.annotation;}
  }
- dataset=next;revisions.set(id,next._storageRevision||0);index=0;session=null;$('search').value='';$('statusFilter').value='all';
+ dataset=next;revisions.set(id,next._storageRevision||0);index=0;session=null;$('statusFilter').value='all';
  session=C.fileLabels(dataset,parsed.imported[0]?.annotator||'');session.labelerName=restarted?'':parsed.labelerName||session.labelerName||(session.annotator!=='individual'?session.annotator:$('labelerName').value.trim());$('labelerName').value=session.labelerName||'';
  render();if(!await persist())return false;notice(`${dataset.records.length} publicaciones cargadas.${restarted?' Etiquetado iniciado desde cero.':resumed?' Se recuperó el avance guardado en este navegador.':''}${parsed.duplicates?' Se omitieron '+parsed.duplicates+' filas idénticas con el mismo ID.':''}${parsed.imported.length?' Se recuperaron las anotaciones del archivo.':''}`,true);return true;
 }
@@ -122,8 +122,8 @@ async function clearLabels(){
  clearTimeout(persistTimer);persistTimer=null;await saveChain;
  const stored=await storedDataset(dataset.id)||dataset;
  dataset={...stored,sessions:[],activeAnnotator:'',annotationHistory:[...(stored.annotationHistory||[]),{savedAt:new Date().toISOString(),sessions:clone(stored.sessions),activeAnnotator:stored.activeAnnotator||''}]};
- revisions.set(dataset.id,stored._storageRevision||0);storageConflict=false;index=0;session=C.fileLabels(dataset);session.labelerName='';$('labelerName').value='';$('search').value='';$('statusFilter').value='all';
- for(const id of ['jump','statusFilter','search','labelerName'])$(id).disabled=false;
+ revisions.set(dataset.id,stored._storageRevision||0);storageConflict=false;index=0;session=C.fileLabels(dataset);session.labelerName='';$('labelerName').value='';$('statusFilter').value='all';
+ for(const id of ['jump','statusFilter','labelerName'])$(id).disabled=false;
  render();if(await persist())notice(`Etiquetas borradas. 0 de ${dataset.records.length} completadas.`,true);
 }
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
@@ -154,7 +154,7 @@ $('annotationForm').addEventListener('change',()=>{if(!loading){setDependent();s
 $('annotationForm').addEventListener('submit',e=>{e.preventDefault();saveAndAdvance().catch(fail);});
 $('previous').addEventListener('click',()=>move(-1).catch(fail));$('next').addEventListener('click',()=>move(1).catch(fail));
 $('addLocation').addEventListener('click',()=>{addLocation();scheduleSave();});
-for(const id of ['statusFilter','search'])$(id).addEventListener(id==='search'?'input':'change',async()=>{collectDraft();render();await persist();});
+$('statusFilter').addEventListener('change',async()=>{collectDraft();render();await persist();});
 $('jump').addEventListener('change',async()=>{collectDraft();index=Number($('jump').value);render();await persist();});
 $('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];try{await ready;if(f)await importFile(f);}catch(err){fail(err);}finally{e.target.value='';}});
 $('demoButton').addEventListener('click',async()=>{try{await ready;await acceptImport(C.normalize(C.csv(window.PIURA_DEMO_CSV)),'Ejemplos ficticios · 8 publicaciones');}catch(err){fail(err);}});
