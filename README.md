@@ -10,11 +10,13 @@ Página estática para importar CSV o Excel (.xlsx y .xls), revisar texto e imá
 
 ## Pantalla
 
-**Archivo** muestra el nombre del archivo y los botones **Importar CSV o Excel**, **Exportar Excel** y **Exportar CSV**. **Avance del archivo** permanece visible sobre toda el área de trabajo: el contador grande «Publicación X de Y» muestra la posición original, incluso al filtrar. La barra y el porcentaje representan publicaciones completadas. Los borradores cuentan como pendientes; los casos con duda se muestran por separado y no se consideran completados.
+**Archivo** muestra el nombre del archivo, **Importar archivo** (CSV o Excel) y **Exportar**, que reúne **Excel (.xlsx)** y **CSV (.csv)**. El menú se cierra al elegir un formato, pulsar fuera o usar Escape. **Avance del archivo** permanece visible sobre toda el área de trabajo: el contador grande «Publicación X de Y» muestra la posición original, incluso al filtrar. La barra y el porcentaje representan publicaciones completadas. Los borradores cuentan como pendientes; los casos con duda se muestran por separado y no se consideran completados.
 
 **Publicación** separa ID, fecha y hora, título cuando esté incluido, contenido e imágenes/videos. X no exige un título: si el CSV no tiene `titulo`, `título` o `title`, no se genera uno ni se divide artificialmente el texto. **Etiquetas** agrupa los valores que debe registrar la persona, conservando las reglas del protocolo.
 
 En pantallas de al menos 1100 px de ancho y 600 px de alto, el archivo y el avance ocupan una cabecera compacta. **Publicación** y **Etiquetas** aparecen lado a lado y aprovechan el alto disponible. Cada panel permite desplazarse de forma independiente si el texto, los medios o las ubicaciones son extensos; los botones para guardar y avanzar permanecen visibles. **Ver criterios** despliega las explicaciones completas del protocolo y **Uso** conserva las instrucciones. En móvil, con zoom elevado o con poco alto de pantalla se usa el desplazamiento habitual para mantener campos y textos legibles.
+
+La vista usa superficies blancas, separadores suaves y el verde para el avance, las respuestas seleccionadas y guardar. Las respuestas Sí/No mantienen controles de radio nativos, navegación por teclado, foco visible y una marca de selección además del color. La ayuda de Confianza aparece al elegir **Con duda**; las observaciones siguen siendo obligatorias en ese caso.
 
 **Borrar etiquetas** permite reiniciar el archivo cargado sin volver a importarlo. Pide confirmación; cancelar conserva el trabajo. Confirmar vacía el etiquetado activo y el nombre, vuelve a la primera publicación, limpia los filtros y guarda un avance de 0 completadas. Las publicaciones originales se conservan. Las sesiones anteriores quedan en el historial local interno, separadas del etiquetado y de la exportación nuevos. La protección de escrituras también impide que una pestaña anterior deshaga este reinicio.
 
