@@ -122,3 +122,30 @@ button,.button,input,select,textarea{border-color:#cbd6d0;font-weight:500}
  .has-dataset .editor-actions{padding:12px}
 }
 @media(max-width:650px){.navigation{gap:14px}.locations,.has-dataset .locations{margin:16px 0}.closing-fields{gap:14px}}
+
+/* Location decisions are visible before the fields needed for each outcome. */
+.location-presence,.location-type-group{border:0;padding:0;margin:14px 0 0;min-width:0}
+.location-presence legend,.location-type-group legend{font-size:.94rem;font-weight:600;padding:0;margin-bottom:10px}
+.location-presence-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.location-type-options{display:grid;gap:8px}
+.location-presence-options>label,.location-type-options>label{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #d4e1d8;border-radius:8px;background:white;cursor:pointer;font-weight:400}
+.location-presence-options>label>span,.location-type-options>label>span{display:grid;gap:3px;min-width:0}
+.location-presence-options strong,.location-type-options strong{font-size:.94rem;font-weight:600;line-height:1.35}
+.location-presence-options small,.location-type-options small{font-size:.8rem;font-weight:400;line-height:1.4;color:#53685b}
+.location-presence-options input[type=radio],.location-type-options input[type=radio]{flex:none;display:inline-block;width:18px;height:18px;min-height:18px;margin:3px 0 0;padding:0;accent-color:#277956}
+.location-presence-options>label:has(input:checked),.location-type-options>label:has(input:checked){background:#eaf5ee;border-color:#78a88a}
+.location-presence-options>label:focus-within,.location-type-options>label:focus-within{outline:3px solid #177db7;outline-offset:2px}
+.location-absent{margin:12px 0 0;padding:10px 12px;border-left:3px solid #78a88a;background:#edf6f0;font-size:.89rem}
+.locations>h3{margin:0}.locations>#locationEmpty{margin:12px 0 0}.locations>#addLocation{width:100%;margin-top:14px}
+.location-row{margin-top:18px;padding:0;border:1px solid #cdded2;border-radius:10px;background:white;overflow:hidden}
+.location-row-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid #dbe6df;background:#eef5f0}
+.location-row-title{font-size:1rem;margin:0;font-weight:650}.location-row .location-row-heading .remove{margin:0;border:0;background:transparent;color:#80544d;min-height:34px;padding:4px 8px}
+.location-row .location-grid,.has-dataset .location-row .location-grid{display:flex;flex-direction:column;gap:18px;padding:16px}
+.location-step,.location-type-group{margin:0}.location-step>label,.location-row .map-tools>label{font-weight:500}
+.location-step h5{font-size:.94rem;font-weight:650;margin:0 0 12px}.reference-selection{font-size:.83rem;padding:6px 9px;min-height:34px;margin-top:8px}
+.location-row .map-tools{border:1px solid #d7e3dc;border-radius:8px;background:#f6faf7;padding:12px;margin:0}
+.location-row .map-tools summary{font-size:.9rem;font-weight:600}.location-row .map-tools>label{margin-top:12px}.location-row .map-links{margin-top:12px}.location-row .map-tools>.help{margin-bottom:0}
+.location-identification,.point-verification{padding-top:16px;border-top:1px solid #dde7e0}.location-identification>label+label{margin-top:12px}
+.coordinate-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.coordinate-fields label{font-weight:500}
+.point-verification>.coordinate-helper{margin:0;padding:12px}.point-verification>.coordinate-helper button{margin-top:10px}.point-verification>.coordinate-helper>.help{margin-bottom:0}
+@media(max-width:650px){.location-presence-options{grid-template-columns:1fr}.location-row .location-grid,.has-dataset .location-row .location-grid{padding:12px}.coordinate-fields{grid-template-columns:1fr}}

@@ -77,7 +77,11 @@ Las etiquetas principales usan texto e imágenes estáticas; el video tiene un c
 
 ## Buscar una referencia en el mapa
 
-En **Añadir lugar**, puedes escribir la referencia literal o seleccionar la frase dentro del texto de la publicación y pulsar **Usar texto seleccionado del post**. Cada lugar tiene su propia búsqueda editable y dos enlaces: **Buscar en Google Maps** y **Buscar en OpenStreetMap**. Se añade Piura, Perú como contexto de búsqueda visible y editable, sin modificar la referencia textual ni dar por resuelta la ubicación.
+En **Ubicación del hecho** primero se responde **¿El texto menciona un lugar?**, con opciones visibles **Sí, hay una referencia** y **No menciona un lugar**. Ninguna se selecciona por defecto. Elegir Sí crea el primer lugar; **Añadir otro lugar** permite registrar más. Elegir No oculta los lugares y guarda `noReference=true` con la lista de ubicaciones vacía. Esta estructura conserva el esquema de las exportaciones anteriores.
+
+Cada lugar tiene su propia tarjeta con referencia literal, tres opciones visibles de **Tipo de ubicación** y sus definiciones: **No resuelta** cuando la referencia no pudo identificarse, **Área** para distrito/barrio/sector y **Punto** para un lugar preciso verificado. Las opciones mantienen el teclado y los controles de radio nativos, y no se selecciona un tipo automáticamente. Área y Punto muestran nombre del lugar y distrito; solo Punto muestra coordenadas y fuente. Cambiar de Punto a Área o No resuelta elimina de la anotación los datos que dejan de corresponder, según el protocolo.
+
+Puedes escribir la referencia literal o seleccionar la frase dentro del texto de la publicación y pulsar **Usar texto seleccionado del post**. Dentro de **Buscar la referencia en el mapa**, cada lugar tiene su propia búsqueda editable y dos enlaces: **Google Maps** y **OpenStreetMap**. Se añade Piura, Perú como contexto de búsqueda visible y editable, sin modificar la referencia textual ni dar por resuelta la ubicación. El asistente para pegar coordenadas está separado de los campos manuales de latitud, longitud y fuente.
 
 Si puedes verificar un punto concreto, elige **Punto**. Copia del mapa el par **latitud, longitud**, pégalo en el asistente y pulsa **Usar coordenadas**. También se aceptan enlaces de Google Maps que contengan coordenadas del punto (`query`, `q` o metadatos `!3d…!4d…`) y enlaces largos de OpenStreetMap con marcador (`mlat` y `mlon`). Cuando se importa un enlace compatible, se conserva en Fuente de verificación. Si pegas solo números, debes indicar la fuente manualmente.
 
